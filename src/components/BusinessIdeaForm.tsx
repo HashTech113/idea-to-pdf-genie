@@ -74,16 +74,16 @@ export const BusinessIdeaForm = () => {
     <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-background relative overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute inset-0">
-        <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-primary/5 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/3 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-primary/5"></div>
+        <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/15 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-primary/10"></div>
       </div>
       
       <div className="w-full max-w-lg relative z-10">
         {/* Modern glassmorphism card */}
         <div className="relative group">
           {/* Gradient border effect */}
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/30 via-primary/10 to-primary/30 rounded-[17px] blur-sm group-hover:blur-md transition-all duration-300"></div>
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/40 via-accent/30 to-primary/40 rounded-[17px] blur-sm group-hover:blur-md transition-all duration-300"></div>
           
           <div className="relative bg-glass-background backdrop-blur-glass border border-glass-border rounded-glass p-6 sm:p-8 lg:p-10 shadow-[var(--shadow-glass)] overflow-hidden">
             {/* Inner glow */}
@@ -92,8 +92,8 @@ export const BusinessIdeaForm = () => {
             <form onSubmit={handleSubmit} className="space-y-8 relative z-10">
               {/* Modern title design */}
               <div className="text-center space-y-4">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full border border-primary/20 mb-4">
-                  <div className="w-8 h-8 bg-primary rounded-lg opacity-80"></div>
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full border border-primary/30 mb-4">
+                  <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-lg"></div>
                 </div>
                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground tracking-tight">
                   Business Idea Form
@@ -147,7 +147,7 @@ export const BusinessIdeaForm = () => {
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="group relative w-full h-16 text-lg font-bold bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-[var(--shadow-button)] hover:shadow-xl transform hover:-translate-y-1 active:translate-y-0 overflow-hidden"
+                  className="group relative w-full h-16 text-lg font-bold bg-gradient-to-r from-primary via-accent to-primary hover:from-primary/90 hover:via-accent/90 hover:to-primary/90 text-primary-foreground rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-[var(--shadow-button)] hover:shadow-xl transform hover:-translate-y-1 active:translate-y-0 overflow-hidden"
                 >
                   {/* Button shine effect */}
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
