@@ -71,70 +71,120 @@ export const BusinessIdeaForm = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-background relative overflow-hidden">
-      {/* Subtle gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-secondary/10"></div>
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-background relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0">
+        <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-primary/5 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/3 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-primary/5"></div>
+      </div>
       
-      <div className="w-full max-w-md relative z-10">
-        <div className="relative">
-          {/* Enhanced glassmorphism card */}
-          <div className="bg-glass-background backdrop-blur-glass border border-glass-border rounded-glass p-8 shadow-2xl relative">
-            {/* Subtle glow effect */}
-            <div className="absolute inset-0 rounded-glass bg-gradient-to-b from-white/5 to-transparent"></div>
+      <div className="w-full max-w-lg relative z-10">
+        {/* Modern glassmorphism card */}
+        <div className="relative group">
+          {/* Gradient border effect */}
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/30 via-primary/10 to-primary/30 rounded-[17px] blur-sm group-hover:blur-md transition-all duration-300"></div>
+          
+          <div className="relative bg-glass-background backdrop-blur-glass border border-glass-border rounded-glass p-6 sm:p-8 lg:p-10 shadow-[var(--shadow-glass)] overflow-hidden">
+            {/* Inner glow */}
+            <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-transparent rounded-glass"></div>
             
             <form onSubmit={handleSubmit} className="space-y-8 relative z-10">
-              {/* Enhanced title */}
-              <div className="text-center space-y-2">
-                <h1 className="text-3xl font-bold text-foreground tracking-tight">
+              {/* Modern title design */}
+              <div className="text-center space-y-4">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full border border-primary/20 mb-4">
+                  <div className="w-8 h-8 bg-primary rounded-lg opacity-80"></div>
+                </div>
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground tracking-tight">
                   Business Idea Form
                 </h1>
-                <div className="w-16 h-0.5 bg-primary mx-auto rounded-full"></div>
+                <p className="text-muted-foreground text-sm sm:text-base max-w-sm mx-auto leading-relaxed">
+                  Transform your innovative concept into a comprehensive business plan
+                </p>
               </div>
 
-              {/* Business Idea Textarea */}
-              <div className="space-y-3">
-                <label className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                  Your Business Idea
-                </label>
-                <Textarea
-                  value={idea}
-                  onChange={(e) => setIdea(e.target.value)}
-                  placeholder="Describe your innovative business concept..."
-                  className="min-h-[140px] bg-input border-glass-border text-foreground placeholder:text-muted-foreground resize-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 rounded-lg"
+              {/* Enhanced form fields */}
+              <div className="space-y-6">
+                {/* Business Idea Field */}
+                <div className="space-y-3">
+                  <label className="flex items-center text-sm font-semibold text-foreground tracking-wide">
+                    <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
+                    Your Business Concept
+                  </label>
+                  <div className="relative">
+                    <Textarea
+                      value={idea}
+                      onChange={(e) => setIdea(e.target.value)}
+                      placeholder="Describe your innovative business idea in detail..."
+                      className="min-h-[160px] bg-input/50 border-2 border-glass-border text-foreground placeholder:text-muted-foreground resize-none focus:ring-2 focus:ring-primary/50 focus:border-primary/30 transition-all duration-300 rounded-xl backdrop-blur-sm hover:bg-input/70"
+                      disabled={isLoading}
+                    />
+                    <div className="absolute bottom-3 right-3 text-xs text-muted-foreground">
+                      {idea.length}/500
+                    </div>
+                  </div>
+                </div>
+
+                {/* Location Field */}
+                <div className="space-y-3">
+                  <label className="flex items-center text-sm font-semibold text-foreground tracking-wide">
+                    <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
+                    Target Location
+                  </label>
+                  <Input
+                    type="text"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="City, State, or Region for your business launch"
+                    className="bg-input/50 border-2 border-glass-border text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/50 focus:border-primary/30 transition-all duration-300 rounded-xl h-14 backdrop-blur-sm hover:bg-input/70"
+                    disabled={isLoading}
+                  />
+                </div>
+              </div>
+
+              {/* Modern CTA Button */}
+              <div className="pt-4">
+                <Button
+                  type="submit"
                   disabled={isLoading}
-                />
+                  className="group relative w-full h-16 text-lg font-bold bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-[var(--shadow-button)] hover:shadow-xl transform hover:-translate-y-1 active:translate-y-0 overflow-hidden"
+                >
+                  {/* Button shine effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                  
+                  <span className="relative z-10 flex items-center justify-center">
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-3 h-6 w-6 animate-spin" />
+                        <span className="animate-pulse">Generating Your PDF...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Generate Business Plan PDF</span>
+                        <svg className="ml-2 w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        </svg>
+                      </>
+                    )}
+                  </span>
+                </Button>
               </div>
 
-              {/* Location Input */}
-              <div className="space-y-3">
-                <label className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                  Location
-                </label>
-                <Input
-                  type="text"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  placeholder="Where will you launch this business?"
-                  className="bg-input border-glass-border text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 rounded-lg h-12"
-                  disabled={isLoading}
-                />
+              {/* Trust indicators */}
+              <div className="flex items-center justify-center space-x-6 text-xs text-muted-foreground pt-4">
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                  Secure & Private
+                </div>
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                  Instant Download
+                </div>
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
+                  AI-Powered
+                </div>
               </div>
-
-              {/* Enhanced Submit Button */}
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="w-full h-14 text-lg font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Generating PDF...
-                  </>
-                ) : (
-                  'Generate PDF'
-                )}
-              </Button>
             </form>
           </div>
         </div>

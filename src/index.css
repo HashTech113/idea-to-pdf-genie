@@ -43,6 +43,14 @@ All colors MUST be HSL.
     --glass-border: 0 0% 100% / 0.25;
     --glass-backdrop-blur: 20px;
 
+    /* Modern gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.8));
+    --gradient-border: linear-gradient(135deg, hsl(var(--primary) / 0.3), hsl(var(--primary) / 0.1));
+    
+    /* Enhanced shadows */
+    --shadow-glass: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+    --shadow-button: 0 10px 25px -5px rgba(255, 255, 255, 0.1);
+
     --sidebar-background: 0 0% 98%;
 
     --sidebar-foreground: 240 5.3% 26.1%;
