@@ -71,45 +71,60 @@ export const BusinessIdeaForm = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-background relative overflow-hidden">
+      {/* Subtle gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-secondary/10"></div>
+      
+      <div className="w-full max-w-md relative z-10">
         <div className="relative">
-          {/* Glassmorphism card */}
-          <div className="bg-glass-background backdrop-blur-glass border border-glass-border rounded-glass p-8 shadow-2xl">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Title */}
-              <h1 className="text-[1.8rem] font-bold text-center text-foreground mb-8">
-                Business Idea Form
-              </h1>
+          {/* Enhanced glassmorphism card */}
+          <div className="bg-glass-background backdrop-blur-glass border border-glass-border rounded-glass p-8 shadow-2xl relative">
+            {/* Subtle glow effect */}
+            <div className="absolute inset-0 rounded-glass bg-gradient-to-b from-white/5 to-transparent"></div>
+            
+            <form onSubmit={handleSubmit} className="space-y-8 relative z-10">
+              {/* Enhanced title */}
+              <div className="text-center space-y-2">
+                <h1 className="text-3xl font-bold text-foreground tracking-tight">
+                  Business Idea Form
+                </h1>
+                <div className="w-16 h-0.5 bg-primary mx-auto rounded-full"></div>
+              </div>
 
               {/* Business Idea Textarea */}
-              <div className="space-y-2">
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                  Your Business Idea
+                </label>
                 <Textarea
                   value={idea}
                   onChange={(e) => setIdea(e.target.value)}
-                  placeholder="Enter your business idea..."
-                  className="min-h-[120px] bg-input border-glass-border text-foreground placeholder:text-muted-foreground resize-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  placeholder="Describe your innovative business concept..."
+                  className="min-h-[140px] bg-input border-glass-border text-foreground placeholder:text-muted-foreground resize-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 rounded-lg"
                   disabled={isLoading}
                 />
               </div>
 
               {/* Location Input */}
-              <div className="space-y-2">
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                  Location
+                </label>
                 <Input
                   type="text"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  placeholder="Enter your location..."
-                  className="bg-input border-glass-border text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
+                  placeholder="Where will you launch this business?"
+                  className="bg-input border-glass-border text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 rounded-lg h-12"
                   disabled={isLoading}
                 />
               </div>
 
-              {/* Submit Button */}
+              {/* Enhanced Submit Button */}
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full h-12 text-lg font-medium bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-14 text-lg font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
               >
                 {isLoading ? (
                   <>

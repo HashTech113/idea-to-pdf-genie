@@ -8,40 +8,40 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 222 84% 5%; /* Dark slate background #0f172a */
-    --foreground: 220 13% 91%; /* Light gray text #e5e7eb */
+    --background: 0 0% 0%; /* Pure black background */
+    --foreground: 0 0% 100%; /* Pure white text */
 
-    --card: 222 84% 5%;
-    --card-foreground: 220 13% 91%;
+    --card: 0 0% 0%;
+    --card-foreground: 0 0% 100%;
 
-    --popover: 222 84% 5%;
-    --popover-foreground: 220 13% 91%;
+    --popover: 0 0% 0%;
+    --popover-foreground: 0 0% 100%;
 
-    --primary: 142 71% 45%; /* Green #22c55e */
-    --primary-foreground: 220 13% 91%;
+    --primary: 0 0% 100%; /* White primary */
+    --primary-foreground: 0 0% 0%; /* Black text on white */
 
-    --secondary: 217 32% 18%;
-    --secondary-foreground: 220 13% 91%;
+    --secondary: 0 0% 10%; /* Very dark gray */
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 217 32% 18%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 0 0% 15%; /* Dark gray */
+    --muted-foreground: 0 0% 70%; /* Light gray */
 
-    --accent: 217 32% 18%;
-    --accent-foreground: 220 13% 91%;
+    --accent: 0 0% 20%; /* Medium dark gray */
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
-    --destructive-foreground: 220 13% 91%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 100% / 0.1; /* Subtle white border */
-    --input: 0 0% 100% / 0.05; /* Very subtle input background */
-    --ring: 142 71% 45%;
+    --border: 0 0% 100% / 0.2; /* More visible white border */
+    --input: 0 0% 100% / 0.08; /* Subtle white input background */
+    --ring: 0 0% 100%;
 
     --radius: 0.5rem;
 
-    /* Custom glassmorphism variables */
-    --glass-background: 0 0% 100% / 0.05;
-    --glass-border: 0 0% 100% / 0.1;
-    --glass-backdrop-blur: 12px;
+    /* Enhanced glassmorphism variables */
+    --glass-background: 0 0% 100% / 0.08;
+    --glass-border: 0 0% 100% / 0.25;
+    --glass-backdrop-blur: 20px;
 
     --sidebar-background: 0 0% 98%;
 
