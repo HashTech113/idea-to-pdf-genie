@@ -80,16 +80,10 @@ export const BusinessIdeaForm = () => {
       </div>
       
       <div className="w-full max-w-lg relative z-10">
-        {/* Modern glassmorphism card */}
-        <div className="relative group">
-          {/* Gradient border effect */}
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/40 via-accent/30 to-primary/40 rounded-[17px] blur-sm group-hover:blur-md transition-all duration-300"></div>
-          
-          <div className="relative bg-glass-background backdrop-blur-glass border border-glass-border rounded-glass p-6 sm:p-8 lg:p-10 shadow-[var(--shadow-glass)] overflow-hidden">
-            {/* Inner glow */}
-            <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-transparent rounded-glass"></div>
-            
-            <form onSubmit={handleSubmit} className="space-y-8 relative z-10">
+        {/* Modern solid card */}
+        <div className="relative">
+          <div className="bg-card border-2 border-primary/20 rounded-xl p-6 sm:p-8 lg:p-10 shadow-2xl">
+            <form onSubmit={handleSubmit} className="space-y-8">
               {/* Modern title design */}
               <div className="text-center space-y-4">
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full border border-primary/30 mb-4">
@@ -116,7 +110,7 @@ export const BusinessIdeaForm = () => {
                       value={idea}
                       onChange={(e) => setIdea(e.target.value)}
                       placeholder="Describe your innovative business idea in detail..."
-                      className="min-h-[160px] bg-input/50 border-2 border-glass-border text-foreground placeholder:text-muted-foreground resize-none focus:ring-2 focus:ring-primary/50 focus:border-primary/30 transition-all duration-300 rounded-xl backdrop-blur-sm hover:bg-input/70"
+                      className="min-h-[160px] bg-input border-2 border-primary/20 text-foreground placeholder:text-muted-foreground resize-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all duration-300 rounded-xl hover:border-primary/30"
                       disabled={isLoading}
                     />
                     <div className="absolute bottom-3 right-3 text-xs text-muted-foreground">
@@ -136,7 +130,7 @@ export const BusinessIdeaForm = () => {
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder="City, State, or Region for your business launch"
-                    className="bg-input/50 border-2 border-glass-border text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/50 focus:border-primary/30 transition-all duration-300 rounded-xl h-14 backdrop-blur-sm hover:bg-input/70"
+                    className="bg-input border-2 border-primary/20 text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all duration-300 rounded-xl h-14 hover:border-primary/30"
                     disabled={isLoading}
                   />
                 </div>
