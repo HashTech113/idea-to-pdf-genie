@@ -9,7 +9,7 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "bun main.tsx"
+    "start": "bun App.tsx"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
