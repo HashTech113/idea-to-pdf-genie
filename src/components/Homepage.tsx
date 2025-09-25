@@ -6,8 +6,12 @@ import { ArrowRight, CheckCircle, Globe, Users, TrendingUp, Star } from "lucide-
 const Homepage = () => {
   const navigate = useNavigate();
 
-  const handleStartResearch = () => {
+  const handleMakeBusinessPlan = () => {
     navigate('/business-plan');
+  };
+
+  const handleLogin = () => {
+    navigate('/login');
   };
 
   return (
@@ -21,13 +25,23 @@ const Homepage = () => {
           <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
             Fill out simple forms, select language, and get a business plan in under 15 minutes. Try It Out!
           </p>
-          <Button 
-            size="lg" 
-            className="text-lg px-8 py-6 bg-primary hover:bg-primary/90"
-            onClick={handleStartResearch}
-          >
-            Start research <ArrowRight className="ml-2 w-5 h-5" />
-          </Button>
+          <div className="space-y-4 flex flex-col items-center">
+            <Button 
+              size="lg" 
+              className="text-lg px-8 py-6 bg-primary hover:bg-primary/90"
+              onClick={handleMakeBusinessPlan}
+            >
+              Make business plan <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
+            <Button 
+              variant="outline" 
+              size="lg" 
+              className="text-lg px-8 py-6 bg-transparent border-primary text-primary hover:bg-primary hover:text-white"
+              onClick={handleLogin}
+            >
+              Login if you've already made a plan
+            </Button>
+          </div>
         </div>
       </section>
 
@@ -250,13 +264,23 @@ const Homepage = () => {
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-8">
             Create a professional business plan in just 15 minutes with our AI business plan generator
           </h2>
-          <Button 
-            size="lg" 
-            className="text-lg px-8 py-6 bg-primary hover:bg-primary/90"
-            onClick={handleStartResearch}
-          >
-            Get Started Now <ArrowRight className="ml-2 w-5 h-5" />
-          </Button>
+          <div className="space-y-4 flex flex-col items-center">
+            <Button 
+              size="lg" 
+              className="text-lg px-8 py-6 bg-primary hover:bg-primary/90"
+              onClick={handleMakeBusinessPlan}
+            >
+              Make business plan <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
+            <Button 
+              variant="outline" 
+              size="lg" 
+              className="text-lg px-8 py-6 bg-transparent border-primary text-primary hover:bg-primary hover:text-white"
+              onClick={handleLogin}
+            >
+              Login if you've already made a plan
+            </Button>
+          </div>
         </div>
       </section>
 
