@@ -70,6 +70,12 @@ const Login = () => {
             email: 'Invalid email or password. Please check your credentials and try again.',
             password: 'Invalid email or password. Please check your credentials and try again.'
           });
+        } else if (error.message.includes('Email not confirmed')) {
+          toast({
+            title: "Email Not Confirmed",
+            description: "Please check your email and click the confirmation link before logging in.",
+            variant: "destructive",
+          });
         } else {
           toast({
             title: "Login Error",
