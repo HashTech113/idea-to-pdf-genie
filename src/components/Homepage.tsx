@@ -25,18 +25,21 @@ const Homepage = () => {
           <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
             Fill out simple forms, select language, and get a business plan in under 15 minutes. Try It Out!
           </p>
-          <div className="space-y-4 flex flex-col items-center">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-4xl mx-auto">
             <Button 
               size="lg" 
-              className="text-lg px-8 py-6 bg-primary hover:bg-primary/90"
+              className="w-full sm:w-72 h-14 text-lg bg-primary hover:bg-primary/90"
               onClick={handleMakeBusinessPlan}
             >
               Make business plan <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
+            
+            <div className="text-white text-lg font-medium px-4">or</div>
+            
             <Button 
               variant="outline" 
               size="lg" 
-              className="text-lg px-8 py-6 bg-transparent border-primary text-primary hover:bg-primary hover:text-white"
+              className="w-full sm:w-72 h-14 text-lg bg-transparent border-primary text-primary hover:bg-primary hover:text-white"
               onClick={handleLogin}
             >
               Login if you've already made a plan
@@ -264,18 +267,21 @@ const Homepage = () => {
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-8">
             Create a professional business plan in just 15 minutes with our AI business plan generator
           </h2>
-          <div className="space-y-4 flex flex-col items-center">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-4xl mx-auto">
             <Button 
               size="lg" 
-              className="text-lg px-8 py-6 bg-primary hover:bg-primary/90"
+              className="w-full sm:w-72 h-14 text-lg bg-primary hover:bg-primary/90"
               onClick={handleMakeBusinessPlan}
             >
               Make business plan <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
+            
+            <div className="text-white text-lg font-medium px-4">or</div>
+            
             <Button 
               variant="outline" 
               size="lg" 
-              className="text-lg px-8 py-6 bg-transparent border-primary text-primary hover:bg-primary hover:text-white"
+              className="w-full sm:w-72 h-14 text-lg bg-transparent border-primary text-primary hover:bg-primary hover:text-white"
               onClick={handleLogin}
             >
               Login if you've already made a plan
