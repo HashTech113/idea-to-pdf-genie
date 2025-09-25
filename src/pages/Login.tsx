@@ -107,7 +107,7 @@ const Login = () => {
           description: "You have successfully logged in.",
         });
         
-        navigate('/dashboard');
+        navigate('/');
       }
     } catch (error: any) {
       toast({
