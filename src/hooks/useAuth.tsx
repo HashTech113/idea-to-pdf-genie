@@ -19,23 +19,45 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+    // Check for existing session in localStorage first (from direct API calls)
+    const checkStoredSession = () => {
+      const storedSession = localStorage.getItem('supabase.auth.token');
+      if (storedSession) {
+        try {
+          const sessionData = JSON.parse(storedSession);
+          if (sessionData.access_token && sessionData.user) {
+            setSession(sessionData);
+            setUser(sessionData.user);
+            setLoading(false);
+            return true;
+          }
+        } catch (e) {
+          localStorage.removeItem('supabase.auth.token');
+        }
+      }
+      return false;
+    };
+
+    // If no stored session from direct API, check Supabase client
+    if (!checkStoredSession()) {
+      // Set up auth state listener for Supabase client
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        (event, session) => {
+          setSession(session);
+          setUser(session?.user ?? null);
+          setLoading(false);
+        }
+      );
+
+      // Check for existing Supabase session
+      supabase.auth.getSession().then(({ data: { session } }) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
-      }
-    );
+      });
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+      return () => subscription.unsubscribe();
+    }
   }, []);
 
   const signUp = async (email: string, password: string, name: string) => {
@@ -63,7 +85,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signOut = async () => {
+    // Clear localStorage session
+    localStorage.removeItem('supabase.auth.token');
+    
+    // Also sign out from Supabase client
     const { error } = await supabase.auth.signOut();
+    
+    // Clear local state
+    setSession(null);
+    setUser(null);
+    
     return { error };
   };
 

@@ -1,7 +1,7 @@
-import { MultiStepBusinessPlanForm } from "@/components/MultiStepBusinessPlanForm";
+import Homepage from "@/components/Homepage";
 
 const Index = () => {
-  return <MultiStepBusinessPlanForm />;
+  return <Homepage />;
 };
 
 export default Index;

@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff } from 'lucide-react';
 import { z } from 'zod';
@@ -23,7 +22,6 @@ const Login = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
   
-  const { signIn } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -62,15 +60,29 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      const { error } = await signIn(formData.email, formData.password);
-      
-      if (error) {
-        if (error.message.includes('Invalid login credentials')) {
+      const response = await fetch('https://tvznnerrgaprchburewu.supabase.co/auth/v1/token?grant_type=password', {
+        method: 'POST',
+        headers: {
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2em5uZXJyZ2FwcmNoYnVyZXd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3OTAxNzUsImV4cCI6MjA3NDM2NjE3NX0._vuf_ZB8i-_GFDz2vIc_6y_6FzjeEkGTOKz90sxiEnY',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || data.error) {
+        const errorMessage = data.error?.message || data.message || 'Login failed';
+        
+        if (errorMessage.includes('Invalid login credentials') || errorMessage.includes('invalid')) {
           setErrors({ 
             email: 'Invalid email or password. Please check your credentials and try again.',
             password: 'Invalid email or password. Please check your credentials and try again.'
           });
-        } else if (error.message.includes('Email not confirmed')) {
+        } else if (errorMessage.includes('Email not confirmed')) {
           toast({
             title: "Email Not Confirmed",
             description: "Please check your email and click the confirmation link before logging in.",
@@ -79,19 +91,24 @@ const Login = () => {
         } else {
           toast({
             title: "Login Error",
-            description: error.message,
+            description: errorMessage,
             variant: "destructive",
           });
         }
         return;
       }
 
-      toast({
-        title: "Welcome back!",
-        description: "You have successfully logged in.",
-      });
-      
-      navigate('/');
+      // Store the session data
+      if (data.access_token) {
+        localStorage.setItem('supabase.auth.token', JSON.stringify(data));
+        
+        toast({
+          title: "Welcome back!",
+          description: "You have successfully logged in.",
+        });
+        
+        navigate('/');
+      }
     } catch (error: any) {
       toast({
         title: "Login Error",
