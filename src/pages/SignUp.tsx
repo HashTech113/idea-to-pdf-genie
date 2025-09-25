@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff } from 'lucide-react';
 import { z } from 'zod';
@@ -28,7 +27,6 @@ const SignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showOtpStep, setShowOtpStep] = useState(false);
   
-  const { signUp, verifyOtp } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -67,15 +65,27 @@ const SignUp = () => {
     setIsLoading(true);
     
     try {
-      const { error } = await signUp(formData.email, formData.password, formData.name);
-      
-      if (error) {
-        if (error.message.includes('already registered')) {
+      // Send OTP using direct API call
+      const response = await fetch('https://tvznnerrgaprchburewu.supabase.co/auth/v1/otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2em5uZXJyZ2FwcmNoYnVyZXd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3OTAxNzUsImV4cCI6MjA3NDM2NjE3NX0._vuf_ZB8i-_GFDz2vIc_6y_6FzjeEkGTOKz90sxiEnY'
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          type: 'signup'
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (errorData.msg && errorData.msg.includes('already registered')) {
           setErrors({ email: 'An account with this email already exists. Please try logging in instead.' });
         } else {
           toast({
             title: "Sign Up Error",
-            description: error.message,
+            description: errorData.msg || "Failed to send OTP",
             variant: "destructive",
           });
         }
@@ -111,12 +121,25 @@ const SignUp = () => {
     setErrors({});
 
     try {
-      const { error } = await verifyOtp(formData.email, otp);
-      
-      if (error) {
+      // Verify OTP using direct API call
+      const response = await fetch('https://tvznnerrgaprchburewu.supabase.co/auth/v1/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2em5uZXJyZ2FwcmNoYnVyZXd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3OTAxNzUsImV4cCI6MjA3NDM2NjE3NX0._vuf_ZB8i-_GFDz2vIc_6y_6FzjeEkGTOKz90sxiEnY'
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          token: otp,
+          type: 'signup'
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
         toast({
           title: "OTP Verification Failed",
-          description: error.message,
+          description: errorData.msg || "Invalid OTP code",
           variant: "destructive",
         });
         return;
