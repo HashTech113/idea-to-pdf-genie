@@ -15,10 +15,10 @@ const Homepage = () => {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <section className="py-20 px-4 relative overflow-hidden animate-gradient-shift" style={{ background: 'var(--gradient-hero-animated)' }}>
-        <div className="absolute inset-0 opacity-20 bg-white/10"></div>
+      <section className="py-20 px-4 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-30" style={{ background: 'var(--gradient-radial-hero)' }}></div>
         <div className="max-w-6xl mx-auto relative z-10">
           <div className="text-center">
             <h1 className="text-5xl md:text-7xl font-normal font-poppins text-gray-900 mb-6">
@@ -30,7 +30,7 @@ const Homepage = () => {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-4xl mx-auto">
               <Button 
                 size="lg" 
-                className="w-full sm:w-72 h-14 text-base bg-black text-white hover:bg-gray-800 flex items-center justify-center border-0"
+                className="w-full sm:w-72 h-14 text-base bg-black text-white hover:bg-gray-800 flex items-center justify-center"
                 onClick={handleMakeBusinessPlan}
               >
                 Make business plan <ArrowRight className="ml-2 w-4 h-4" />
@@ -41,7 +41,7 @@ const Homepage = () => {
               <Button 
                 variant="outline" 
                 size="lg" 
-                className="w-full sm:w-72 h-14 text-base bg-white/20 backdrop-blur-sm border-0 text-black hover:bg-white/30 flex items-center justify-center"
+                className="w-full sm:w-72 h-14 text-base bg-white border-black text-black hover:bg-black hover:text-white flex items-center justify-center"
                 onClick={handleLogin}
               >
                 Login if you've already made a plan
