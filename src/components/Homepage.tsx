@@ -30,7 +30,7 @@ const Homepage = () => {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-4xl mx-auto">
               <Button 
                 size="lg" 
-                className="w-full sm:w-72 h-14 text-base bg-black text-white hover:bg-gray-800 flex items-center justify-center"
+                className="w-full sm:w-72 h-14 text-base bg-black text-white hover:bg-gray-800 flex items-center justify-center border-none"
                 onClick={handleMakeBusinessPlan}
               >
                 Make business plan <ArrowRight className="ml-2 w-4 h-4" />
@@ -39,9 +39,9 @@ const Homepage = () => {
               <div className="text-gray-700 text-lg font-medium px-4">or</div>
               
               <Button 
-                variant="outline" 
+                variant="ghost" 
                 size="lg" 
-                className="w-full sm:w-72 h-14 text-base bg-white border-black text-black hover:bg-black hover:text-white flex items-center justify-center"
+                className="w-full sm:w-72 h-14 text-base bg-white text-black hover:bg-black hover:text-white flex items-center justify-center border-none"
                 onClick={handleLogin}
               >
                 Login if you've already made a plan
