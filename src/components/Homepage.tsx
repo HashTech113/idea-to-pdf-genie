@@ -47,7 +47,7 @@ const Homepage = () => {
         <div className="max-w-6xl mx-auto relative z-10">
           <div className="text-center">
             <h1 className="text-5xl md:text-7xl font-normal font-poppins text-gray-900 mb-6">
-              Worlds 1st Market Research Agent
+              World's 1'st Market Research Agent
             </h1>
             <p className="text-xl md:text-2xl font-poppins font-light text-gray-600 mb-8 max-w-3xl mx-auto">
               Get comprehensive market research and insights in under 15 minutes. Try It Out!
