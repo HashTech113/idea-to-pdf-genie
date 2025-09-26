@@ -130,7 +130,7 @@ export default {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "drift-left": "drift-left 20s ease-in-out infinite",
-        "drift-right": "drift-right 20s ease-in-out infinite",
+        "drift-right": "drift-right 20s ease-in-out infinite 10s",
         "color-spread-red": "color-spread-red 15s ease-in-out infinite",
         "color-spread-blue": "color-spread-blue 18s ease-in-out infinite",
         "gradient-flow": "gradient-flow 25s linear infinite",

@@ -216,12 +216,31 @@ export const MultiStepBusinessPlanForm = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-background relative overflow-hidden">
-      {/* Animated background elements */}
-      <div className="absolute inset-0">
-        <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/15 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-primary/10"></div>
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8 relative overflow-hidden" style={{ backgroundColor: '#f7fafd' }}>
+      {/* Floating color blobs */}
+      <div className="absolute inset-0 pointer-events-none" style={{ zIndex: -1 }}>
+        {/* Sky blue blob - left side */}
+        <div 
+          className="absolute w-96 h-96 rounded-full animate-drift-left"
+          style={{
+            background: '#00A0FF',
+            opacity: 0.4,
+            filter: 'blur(150px)',
+            left: '10%',
+            top: '20%'
+          }}
+        ></div>
+        {/* Coral red blob - right side */}
+        <div 
+          className="absolute w-80 h-80 rounded-full animate-drift-right"
+          style={{
+            background: '#FF5064',
+            opacity: 0.4,
+            filter: 'blur(150px)',
+            right: '15%',
+            top: '30%'
+          }}
+        ></div>
       </div>
       
       <div className="w-full max-w-2xl relative z-10">
