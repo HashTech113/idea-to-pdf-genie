@@ -20,7 +20,7 @@ const Homepage = () => {
       <section className="py-20 px-4 relative overflow-hidden">
         <div className="absolute inset-0 opacity-30" style={{ background: 'var(--gradient-radial-hero)' }}></div>
         <div className="max-w-6xl mx-auto relative z-10">
-          <div className="bg-white rounded-lg shadow-lg p-8 md:p-12 text-center">
+          <div className="text-center">
             <h1 className="text-5xl md:text-7xl font-normal font-poppins text-gray-900 mb-6">
               World's Best AI Business Plan Generator
             </h1>
