@@ -15,29 +15,28 @@ const Homepage = () => {
   };
 
   return (
-    <div className="min-h-screen relative" style={{ backgroundColor: '#f7fafd' }}>
-      {/* Animated Background Blobs */}
+    <div className="min-h-screen relative bg-white">
+      {/* Animated Color Spread Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none" style={{ zIndex: -1 }}>
-        {/* Left sky blue blob */}
+        {/* Light red color spread */}
         <div 
-          className="absolute w-96 h-96 rounded-full animate-drift-left"
+          className="absolute w-full h-full animate-color-spread-red"
           style={{
-            backgroundColor: '#00A0FF',
-            opacity: 0.4,
-            filter: 'blur(150px)',
-            left: '-10%',
-            top: '20%'
+            background: 'radial-gradient(circle at 20% 30%, rgba(255, 182, 193, 0.3) 0%, transparent 50%)',
           }}
         ></div>
-        {/* Right coral red blob */}
+        {/* Light blue color spread */}
         <div 
-          className="absolute w-96 h-96 rounded-full animate-drift-right"
+          className="absolute w-full h-full animate-color-spread-blue"
           style={{
-            backgroundColor: '#FF5064',
-            opacity: 0.4,
-            filter: 'blur(150px)',
-            right: '-10%',
-            top: '30%'
+            background: 'radial-gradient(circle at 80% 70%, rgba(173, 216, 230, 0.3) 0%, transparent 50%)',
+          }}
+        ></div>
+        {/* Additional flowing gradient */}
+        <div 
+          className="absolute w-full h-full animate-gradient-flow"
+          style={{
+            background: 'linear-gradient(45deg, rgba(255, 182, 193, 0.1) 0%, transparent 30%, rgba(173, 216, 230, 0.1) 70%, transparent 100%)',
           }}
         ></div>
       </div>

@@ -106,12 +106,34 @@ export default {
           "75%": { transform: "translateY(8px) scale(0.97)" },
           "100%": { transform: "translateY(0px) scale(1)" }
         },
+        "color-spread-red": {
+          "0%": { transform: "scale(1) rotate(0deg)", opacity: "0.2" },
+          "25%": { transform: "scale(1.2) rotate(90deg)", opacity: "0.3" },
+          "50%": { transform: "scale(0.8) rotate(180deg)", opacity: "0.2" },
+          "75%": { transform: "scale(1.1) rotate(270deg)", opacity: "0.4" },
+          "100%": { transform: "scale(1) rotate(360deg)", opacity: "0.2" }
+        },
+        "color-spread-blue": {
+          "0%": { transform: "scale(1) rotate(0deg)", opacity: "0.3" },
+          "25%": { transform: "scale(0.9) rotate(-90deg)", opacity: "0.2" },
+          "50%": { transform: "scale(1.3) rotate(-180deg)", opacity: "0.4" },
+          "75%": { transform: "scale(0.7) rotate(-270deg)", opacity: "0.3" },
+          "100%": { transform: "scale(1) rotate(-360deg)", opacity: "0.3" }
+        },
+        "gradient-flow": {
+          "0%": { transform: "translateX(-100%) rotate(0deg)" },
+          "50%": { transform: "translateX(0%) rotate(180deg)" },
+          "100%": { transform: "translateX(100%) rotate(360deg)" }
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "drift-left": "drift-left 20s ease-in-out infinite",
         "drift-right": "drift-right 20s ease-in-out infinite",
+        "color-spread-red": "color-spread-red 15s ease-in-out infinite",
+        "color-spread-blue": "color-spread-blue 18s ease-in-out infinite",
+        "gradient-flow": "gradient-flow 25s linear infinite",
       },
     },
   },
