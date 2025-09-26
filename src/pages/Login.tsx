@@ -121,34 +121,31 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-dark p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <Card className="w-full max-w-md bg-white shadow-lg rounded-lg">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Log in to your account</CardTitle>
-          <CardDescription>
-            Enter your email and password to access your account
-          </CardDescription>
+          <CardTitle className="text-3xl font-bold text-gray-900">Login to your account</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-gray-700 font-medium">Email (required)</Label>
               <Input
                 id="email"
                 name="email"
                 type="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                className={errors.email ? "border-destructive" : ""}
+                className={errors.email ? "border-red-500" : "border-gray-300"}
                 disabled={isLoading}
               />
               {errors.email && (
-                <p className="text-sm text-destructive">{errors.email}</p>
+                <p className="text-sm text-red-500">{errors.email}</p>
               )}
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-gray-700 font-medium">Password (required)</Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -156,7 +153,7 @@ const Login = () => {
                   type={showPassword ? "text" : "password"}
                   value={formData.password}
                   onChange={handleInputChange}
-                  className={errors.password ? "border-destructive pr-12" : "pr-12"}
+                  className={errors.password ? "border-red-500 pr-12" : "border-gray-300 pr-12"}
                   disabled={isLoading}
                 />
                 <Button
@@ -168,32 +165,35 @@ const Login = () => {
                   disabled={isLoading}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                    <EyeOff className="h-4 w-4 text-gray-500" />
                   ) : (
-                    <Eye className="h-4 w-4 text-muted-foreground" />
+                    <Eye className="h-4 w-4 text-gray-500" />
                   )}
                 </Button>
               </div>
               {errors.password && (
-                <p className="text-sm text-destructive">{errors.password}</p>
+                <p className="text-sm text-red-500">{errors.password}</p>
               )}
+              <div className="text-right">
+                <a href="#" className="text-sm text-blue-600 hover:underline">Forgot Password?</a>
+              </div>
             </div>
             
             <Button 
               type="submit" 
-              className="w-full" 
+              className="w-full bg-black text-white hover:bg-gray-800 h-12 text-lg font-medium" 
               disabled={isLoading}
             >
-              {isLoading ? "Logging in..." : "Log In"}
+              {isLoading ? "Signing In..." : "Sign In"}
             </Button>
           </form>
           
           <div className="mt-6 text-center">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-gray-600">
               Don't have an account?{" "}
               <Link 
                 to="/signup" 
-                className="text-primary hover:underline font-medium"
+                className="text-blue-600 hover:underline font-medium"
               >
                 Sign up
               </Link>

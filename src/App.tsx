@@ -8,6 +8,8 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
+import OTPSignUp from "./pages/OTPSignUp";
+import OTPVerification from "./pages/OTPVerification";
 import BusinessPlan from "./pages/BusinessPlan";
 import NotFound from "./pages/NotFound";
 
@@ -22,7 +24,8 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<SignUp />} />
+            <Route path="/signup" element={<OTPSignUp />} />
+            <Route path="/verify-otp" element={<OTPVerification />} />
             <Route path="/" element={<Index />} />
             <Route path="/business-plan" element={
               <ProtectedRoute>
