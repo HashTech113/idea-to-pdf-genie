@@ -17,13 +17,14 @@ const Homepage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <section className="py-20 px-4">
-        <div className="max-w-6xl mx-auto">
+      <section className="py-20 px-4 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-30" style={{ background: 'var(--gradient-radial-hero)' }}></div>
+        <div className="max-w-6xl mx-auto relative z-10">
           <div className="bg-white rounded-lg shadow-lg p-8 md:p-12 text-center">
-            <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-6 bg-gradient-to-r from-cyan-500 to-pink-500 bg-clip-text text-transparent">
-              World's 1st Market Research Agent
+            <h1 className="text-5xl md:text-7xl font-bold font-poppins text-gray-900 mb-6">
+              World's Best AI Business Plan Generator
             </h1>
-            <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto">
+            <p className="text-xl md:text-2xl font-poppins font-light text-gray-600 mb-8 max-w-3xl mx-auto">
               Fill out simple forms, select language, and get a business plan in under 15 minutes. Try It Out!
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-4xl mx-auto">
@@ -269,7 +270,7 @@ const Homepage = () => {
       <section className="py-20 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="bg-white rounded-lg shadow-lg p-8 md:p-12 text-center">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-8">
+            <h2 className="text-4xl md:text-5xl font-bold font-poppins text-gray-900 mb-8">
               Create a professional business plan in just 15 minutes with our AI business plan generator
             </h2>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-4xl mx-auto">
