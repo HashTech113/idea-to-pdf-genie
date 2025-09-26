@@ -248,7 +248,7 @@ export const MultiStepBusinessPlanForm = () => {
         <ProgressIndicator currentStep={currentStep} totalSteps={totalSteps} />
         
         {/* Form Card */}
-        <div className="bg-card border-2 border-primary/20 rounded-xl p-6 sm:p-8 lg:p-10 shadow-2xl mt-6">
+        <div className="bg-white border-2 border-primary/20 rounded-xl p-6 sm:p-8 lg:p-10 shadow-2xl mt-6">
           {renderStep()}
         </div>
       </div>
