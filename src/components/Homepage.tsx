@@ -79,7 +79,7 @@ const Homepage = () => {
       {/* How It Works Section */}
       <section className="py-16 px-4">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+          <div className="p-8 text-center">
             <h2 className="text-4xl font-bold text-gray-900 mb-8">How it works?</h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               Our AI-powered business plan generator makes it simple to create professional business plans. 
