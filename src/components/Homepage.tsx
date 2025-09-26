@@ -268,7 +268,7 @@ const Homepage = () => {
       {/* Key Benefits Section */}
       <section className="py-16 px-4">
         <div className="max-w-6xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-8">
+          <div className="p-8">
             <h2 className="text-4xl font-bold text-gray-900 text-center mb-12">Key Benefits</h2>
             <div className="grid md:grid-cols-2 gap-12">
               <div>
@@ -294,7 +294,7 @@ const Homepage = () => {
       {/* Final Call-to-Action Section */}
       <section className="py-20 px-4">
         <div className="max-w-6xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-8 md:p-12 text-center">
+          <div className="p-8 md:p-12 text-center">
             <h2 className="text-4xl md:text-5xl font-bold font-poppins text-gray-900 mb-8">
               Create a professional business plan in just 15 minutes with our AI business plan generator
             </h2>
