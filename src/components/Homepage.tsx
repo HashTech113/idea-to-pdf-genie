@@ -21,7 +21,7 @@ const Homepage = () => {
         <div className="absolute inset-0 opacity-30" style={{ background: 'var(--gradient-radial-hero)' }}></div>
         <div className="max-w-6xl mx-auto relative z-10">
           <div className="bg-white rounded-lg shadow-lg p-8 md:p-12 text-center">
-            <h1 className="text-5xl md:text-7xl font-bold font-poppins text-gray-900 mb-6">
+            <h1 className="text-5xl md:text-7xl font-normal font-poppins text-gray-900 mb-6">
               World's Best AI Business Plan Generator
             </h1>
             <p className="text-xl md:text-2xl font-poppins font-light text-gray-600 mb-8 max-w-3xl mx-auto">
@@ -30,10 +30,10 @@ const Homepage = () => {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-4xl mx-auto">
               <Button 
                 size="lg" 
-                className="w-full sm:w-72 h-14 text-lg bg-black text-white hover:bg-gray-800"
+                className="w-full sm:w-72 h-14 text-base bg-black text-white hover:bg-gray-800 flex items-center justify-center"
                 onClick={handleMakeBusinessPlan}
               >
-                Make business plan <ArrowRight className="ml-2 w-5 h-5" />
+                Make business plan <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
               
               <div className="text-gray-700 text-lg font-medium px-4">or</div>
@@ -41,7 +41,7 @@ const Homepage = () => {
               <Button 
                 variant="outline" 
                 size="lg" 
-                className="w-full sm:w-72 h-14 text-lg bg-white border-black text-black hover:bg-black hover:text-white"
+                className="w-full sm:w-72 h-14 text-base bg-white border-black text-black hover:bg-black hover:text-white flex items-center justify-center"
                 onClick={handleLogin}
               >
                 Login if you've already made a plan
@@ -276,10 +276,10 @@ const Homepage = () => {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-4xl mx-auto">
               <Button 
                 size="lg" 
-                className="w-full sm:w-72 h-14 text-lg bg-black text-white hover:bg-gray-800"
+                className="w-full sm:w-72 h-14 text-base bg-black text-white hover:bg-gray-800 flex items-center justify-center"
                 onClick={handleMakeBusinessPlan}
               >
-                Make business plan <ArrowRight className="ml-2 w-5 h-5" />
+                Make business plan <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
               
               <div className="text-gray-700 text-lg font-medium px-4">or</div>
@@ -287,7 +287,7 @@ const Homepage = () => {
               <Button 
                 variant="outline" 
                 size="lg" 
-                className="w-full sm:w-72 h-14 text-lg bg-white border-black text-black hover:bg-black hover:text-white"
+                className="w-full sm:w-72 h-14 text-base bg-white border-black text-black hover:bg-black hover:text-white flex items-center justify-center"
                 onClick={handleLogin}
               >
                 Login if you've already made a plan
