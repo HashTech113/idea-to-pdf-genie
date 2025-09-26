@@ -216,39 +216,15 @@ export const MultiStepBusinessPlanForm = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8 relative overflow-hidden" style={{ backgroundColor: '#f7fafd' }}>
-      {/* Floating color blobs */}
-      <div className="absolute inset-0 pointer-events-none" style={{ zIndex: -1 }}>
-        {/* Sky blue blob - left side */}
-        <div 
-          className="absolute w-96 h-96 rounded-full animate-drift-left"
-          style={{
-            background: '#00A0FF',
-            opacity: 0.4,
-            filter: 'blur(150px)',
-            left: '10%',
-            top: '20%'
-          }}
-        ></div>
-        {/* Coral red blob - right side */}
-        <div 
-          className="absolute w-80 h-80 rounded-full animate-drift-right"
-          style={{
-            background: '#FF5064',
-            opacity: 0.4,
-            filter: 'blur(150px)',
-            right: '15%',
-            top: '30%'
-          }}
-        ></div>
-      </div>
-      
-      <div className="w-full max-w-2xl relative z-10">
+    <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
+      <div className="max-w-2xl mx-auto">
         {/* Progress Indicator */}
-        <ProgressIndicator currentStep={currentStep} totalSteps={totalSteps} />
+        <div className="mb-8">
+          <ProgressIndicator currentStep={currentStep} totalSteps={totalSteps} />
+        </div>
         
         {/* Form Card */}
-        <div className="bg-card border-2 border-primary/20 rounded-xl p-6 sm:p-8 lg:p-10 shadow-2xl mt-6">
+        <div className="bg-card rounded-2xl p-6 sm:p-8 lg:p-10 border border-border" style={{ boxShadow: 'var(--shadow-large)' }}>
           {renderStep()}
         </div>
       </div>

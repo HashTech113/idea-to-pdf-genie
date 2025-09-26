@@ -18,9 +18,9 @@ export const ProgressIndicator = ({ currentStep, totalSteps }: ProgressIndicator
       </div>
       
       {/* Progress bar */}
-      <div className="w-full bg-muted rounded-full h-2">
+      <div className="w-full bg-muted rounded-full h-3">
         <div 
-          className="bg-gradient-to-r from-primary to-accent h-2 rounded-full transition-all duration-300 ease-out"
+          className="bg-primary h-3 rounded-full transition-all duration-500 ease-out"
           style={{ width: `${progress}%` }}
         />
       </div>
@@ -35,11 +35,11 @@ export const ProgressIndicator = ({ currentStep, totalSteps }: ProgressIndicator
           return (
             <div
               key={stepNumber}
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-200 ${
+              className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 ${
                 isCompleted
-                  ? 'bg-primary text-primary-foreground'
+                  ? 'bg-primary text-primary-foreground shadow-md'
                   : isActive
-                  ? 'bg-accent text-accent-foreground ring-2 ring-accent/50'
+                  ? 'bg-primary text-primary-foreground ring-4 ring-primary/20 shadow-md'
                   : 'bg-muted text-muted-foreground'
               }`}
             >

@@ -43,22 +43,19 @@ export const Step1Objective = ({ data, updateData, onNext }: Step1Props) => {
 
   return (
     <div className="space-y-8">
-      <div className="text-center space-y-4">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full border border-primary/30 mb-4">
-          <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-lg"></div>
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+      <div className="text-center space-y-6 mb-10">
+        <h1 className="text-3xl sm:text-4xl font-bold text-foreground">
           Business Plan Objective
         </h1>
-        <p className="text-muted-foreground text-sm sm:text-base max-w-md mx-auto">
+        <p className="text-muted-foreground text-lg max-w-md mx-auto leading-relaxed">
           Let's start by understanding your business plan objectives and preferences
         </p>
       </div>
 
       <div className="space-y-6">
         {/* Privacy Notice */}
-        <div className="bg-secondary/50 border border-primary/20 rounded-lg p-4">
-          <div className="flex items-start space-x-3">
+        <div className="bg-muted/30 border border-border rounded-xl p-6" style={{ boxShadow: 'var(--shadow-soft)' }}>
+          <div className="flex items-start space-x-4">
             <Checkbox
               id="privacy"
               checked={data.privacyAccepted}
@@ -67,58 +64,58 @@ export const Step1Objective = ({ data, updateData, onNext }: Step1Props) => {
               }
               className="mt-1"
             />
-            <div className="space-y-2">
-              <Label htmlFor="privacy" className="text-sm font-medium">
+            <div className="space-y-3">
+              <Label htmlFor="privacy" className="text-base font-semibold text-foreground">
                 Privacy Notice Agreement
               </Label>
-              <p className="text-xs text-muted-foreground leading-relaxed">
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 I understand that my business information will be processed to generate a comprehensive business plan. 
                 All data is handled securely and used solely for plan generation purposes.
               </p>
             </div>
           </div>
           {errors.privacy && (
-            <p className="text-destructive text-xs mt-2">{errors.privacy}</p>
+            <p className="text-destructive text-sm mt-3">{errors.privacy}</p>
           )}
         </div>
 
         {/* Business Type */}
-        <div className="space-y-3">
-          <Label className="text-sm font-semibold text-foreground">
+        <div className="space-y-4">
+          <Label className="text-lg font-semibold text-foreground">
             Is this for an existing or upcoming business?
           </Label>
           <RadioGroup
             value={data.businessType}
             onValueChange={(value) => updateData({ businessType: value })}
-            className="grid grid-cols-1 gap-3"
+            className="grid grid-cols-1 gap-4"
           >
-            <div className="flex items-center space-x-2 bg-secondary/30 p-3 rounded-lg border border-primary/10 hover:border-primary/30 transition-colors">
+            <div className="flex items-center space-x-4 bg-background p-5 rounded-xl border-2 border-border hover:border-primary/50 transition-all duration-200" style={{ boxShadow: 'var(--shadow-soft)' }}>
               <RadioGroupItem value="existing" id="existing" />
-              <Label htmlFor="existing" className="flex-1 cursor-pointer">
+              <Label htmlFor="existing" className="flex-1 cursor-pointer text-base font-medium">
                 Existing Business
               </Label>
             </div>
-            <div className="flex items-center space-x-2 bg-secondary/30 p-3 rounded-lg border border-primary/10 hover:border-primary/30 transition-colors">
+            <div className="flex items-center space-x-4 bg-background p-5 rounded-xl border-2 border-border hover:border-primary/50 transition-all duration-200" style={{ boxShadow: 'var(--shadow-soft)' }}>
               <RadioGroupItem value="upcoming" id="upcoming" />
-              <Label htmlFor="upcoming" className="flex-1 cursor-pointer">
+              <Label htmlFor="upcoming" className="flex-1 cursor-pointer text-base font-medium">
                 Upcoming Business
               </Label>
             </div>
           </RadioGroup>
           {errors.businessType && (
-            <p className="text-destructive text-xs">{errors.businessType}</p>
+            <p className="text-destructive text-sm mt-2">{errors.businessType}</p>
           )}
         </div>
 
         {/* Plan Purpose */}
-        <div className="space-y-3">
-          <Label className="text-sm font-semibold text-foreground">
+        <div className="space-y-4">
+          <Label className="text-lg font-semibold text-foreground">
             What will you use this business plan for?
           </Label>
           <RadioGroup
             value={data.planPurpose}
             onValueChange={(value) => updateData({ planPurpose: value })}
-            className="grid grid-cols-1 gap-3"
+            className="grid grid-cols-1 gap-4"
           >
             {[
               { value: 'funding', label: 'Seeking Investment/Funding' },
@@ -127,29 +124,29 @@ export const Step1Objective = ({ data, updateData, onNext }: Step1Props) => {
               { value: 'presentation', label: 'Investor Presentation' },
               { value: 'other', label: 'Other Purpose' }
             ].map((option) => (
-              <div key={option.value} className="flex items-center space-x-2 bg-secondary/30 p-3 rounded-lg border border-primary/10 hover:border-primary/30 transition-colors">
+              <div key={option.value} className="flex items-center space-x-4 bg-background p-5 rounded-xl border-2 border-border hover:border-primary/50 transition-all duration-200" style={{ boxShadow: 'var(--shadow-soft)' }}>
                 <RadioGroupItem value={option.value} id={option.value} />
-                <Label htmlFor={option.value} className="flex-1 cursor-pointer">
+                <Label htmlFor={option.value} className="flex-1 cursor-pointer text-base font-medium">
                   {option.label}
                 </Label>
               </div>
             ))}
           </RadioGroup>
           {errors.planPurpose && (
-            <p className="text-destructive text-xs">{errors.planPurpose}</p>
+            <p className="text-destructive text-sm mt-2">{errors.planPurpose}</p>
           )}
         </div>
 
         {/* Language Selection */}
-        <div className="space-y-3">
-          <Label className="text-sm font-semibold text-foreground">
+        <div className="space-y-4">
+          <Label className="text-lg font-semibold text-foreground">
             Plan Language
           </Label>
           <Select
             value={data.planLanguage}
             onValueChange={(value) => updateData({ planLanguage: value })}
           >
-            <SelectTrigger className="bg-input border-primary/20 hover:border-primary/30">
+            <SelectTrigger className="h-14 bg-input border-2 border-border hover:border-primary/50 rounded-xl text-base" style={{ boxShadow: 'var(--shadow-soft)' }}>
               <SelectValue placeholder="Select language" />
             </SelectTrigger>
             <SelectContent>
@@ -161,15 +158,16 @@ export const Step1Objective = ({ data, updateData, onNext }: Step1Props) => {
             </SelectContent>
           </Select>
           {errors.planLanguage && (
-            <p className="text-destructive text-xs">{errors.planLanguage}</p>
+            <p className="text-destructive text-sm mt-2">{errors.planLanguage}</p>
           )}
         </div>
       </div>
 
-      <div className="pt-4">
+      <div className="pt-8">
         <Button
           onClick={handleNext}
-          className="w-full h-14 text-lg font-bold bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-primary-foreground rounded-xl transition-all duration-300 transform hover:-translate-y-1"
+          className="w-full h-16 text-lg font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl transition-all duration-200"
+          style={{ boxShadow: 'var(--shadow-medium)' }}
         >
           Next Step
         </Button>
