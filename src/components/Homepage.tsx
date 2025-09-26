@@ -125,7 +125,7 @@ const Homepage = () => {
       {/* Our Process Section */}
       <section className="py-16 px-4">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-8">
+          <div className="p-8">
             <h2 className="text-4xl font-bold text-gray-900 text-center mb-12">Our Process</h2>
             <div className="grid md:grid-cols-2 gap-8">
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
@@ -152,7 +152,7 @@ const Homepage = () => {
       {/* Customer Testimonials Section */}
       <section className="py-16 px-4">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+          <div className="p-8 text-center">
             <h2 className="text-4xl font-bold text-gray-900 mb-12">What customers say about us</h2>
             <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
               Join thousands of entrepreneurs who have successfully created professional business plans 
@@ -179,7 +179,7 @@ const Homepage = () => {
       {/* Mentions Section */}
       <section className="py-16 px-4">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+          <div className="p-8 text-center">
             <h2 className="text-4xl font-bold text-gray-900 mb-12">Mentioned In..</h2>
             <div className="flex justify-center space-x-12 opacity-60">
               <div className="w-24 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
@@ -199,7 +199,7 @@ const Homepage = () => {
       {/* Example AI Generated Plan Section */}
       <section className="py-16 px-4">
         <div className="max-w-6xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-8">
+          <div className="p-8">
             <h2 className="text-4xl font-bold text-gray-900 text-center mb-8">Example AI Generated Plan</h2>
             <div className="text-center mb-12">
               <Button variant="outline" className="bg-white border-black text-black hover:bg-black hover:text-white">
