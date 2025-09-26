@@ -15,10 +15,35 @@ const Homepage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen relative" style={{ backgroundColor: '#f7fafd' }}>
+      {/* Animated Background Blobs */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none" style={{ zIndex: -1 }}>
+        {/* Left sky blue blob */}
+        <div 
+          className="absolute w-96 h-96 rounded-full animate-drift-left"
+          style={{
+            backgroundColor: '#00A0FF',
+            opacity: 0.4,
+            filter: 'blur(150px)',
+            left: '-10%',
+            top: '20%'
+          }}
+        ></div>
+        {/* Right coral red blob */}
+        <div 
+          className="absolute w-96 h-96 rounded-full animate-drift-right"
+          style={{
+            backgroundColor: '#FF5064',
+            opacity: 0.4,
+            filter: 'blur(150px)',
+            right: '-10%',
+            top: '30%'
+          }}
+        ></div>
+      </div>
+      
       {/* Hero Section */}
       <section className="py-20 px-4 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-30" style={{ background: 'var(--gradient-radial-hero)' }}></div>
         <div className="max-w-6xl mx-auto relative z-10">
           <div className="text-center">
             <h1 className="text-5xl md:text-7xl font-normal font-poppins text-gray-900 mb-6">
