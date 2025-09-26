@@ -107,7 +107,7 @@ const Login = () => {
           description: "You have successfully logged in.",
         });
         
-        navigate('/');
+        navigate('/business-plan');
       }
     } catch (error: any) {
       toast({
