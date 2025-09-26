@@ -22,10 +22,10 @@ const Homepage = () => {
         <div className="max-w-6xl mx-auto relative z-10">
           <div className="text-center">
             <h1 className="text-5xl md:text-7xl font-normal font-poppins text-gray-900 mb-6">
-              World's Best AI Business Plan Generator
+              Worlds 1st Market Research Agent
             </h1>
             <p className="text-xl md:text-2xl font-poppins font-light text-gray-600 mb-8 max-w-3xl mx-auto">
-              Fill out simple forms, select language, and get a business plan in under 15 minutes. Try It Out!
+              Get comprehensive market research and insights in under 15 minutes. Try It Out!
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-4xl mx-auto">
               <Button 
