@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Step2BasicInfo } from './steps/Step2BasicInfo';
-import { ProgressIndicator } from './ProgressIndicator';
 
 export interface FormData {
   // Step 1
@@ -142,11 +141,6 @@ export const MultiStepBusinessPlanForm = () => {
   return (
     <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
       <div className="max-w-2xl mx-auto">
-        {/* Progress Indicator */}
-        <div className="mb-8">
-          <ProgressIndicator currentStep={currentStep} totalSteps={totalSteps} />
-        </div>
-        
         {/* Form Card */}
         <div className="bg-card rounded-2xl p-6 sm:p-8 lg:p-10 border border-border" style={{ boxShadow: 'var(--shadow-large)' }}>
           {renderStep()}
