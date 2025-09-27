@@ -80,12 +80,27 @@ const initialFormData: FormData = {
 };
 
 export const MultiStepBusinessPlanForm = () => {
+  const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
+  const totalSteps = 7;
+
   const updateFormData = (stepData: Partial<FormData>) => {
     setFormData(prev => ({ ...prev, ...stepData }));
+  };
+
+  const nextStep = () => {
+    if (currentStep < totalSteps) {
+      setCurrentStep(prev => prev + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(prev => prev - 1);
+    }
   };
 
   const submitForm = async () => {
@@ -121,6 +136,7 @@ export const MultiStepBusinessPlanForm = () => {
 
       // Reset form
       setFormData(initialFormData);
+      setCurrentStep(1);
     } catch (error) {
       console.error('Error generating Business Plan:', error);
       alert('Error generating Business Plan');
@@ -129,18 +145,87 @@ export const MultiStepBusinessPlanForm = () => {
     }
   };
 
+  const renderStep = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <Step1Objective
+            data={formData}
+            updateData={updateFormData}
+            onNext={nextStep}
+          />
+        );
+      case 2:
+        return (
+          <Step2BasicInfo
+            data={formData}
+            updateData={updateFormData}
+            onNext={nextStep}
+            onPrev={prevStep}
+          />
+        );
+      case 3:
+        return (
+          <Step3CustomerGroups
+            data={formData}
+            updateData={updateFormData}
+            onNext={nextStep}
+            onPrev={prevStep}
+          />
+        );
+      case 4:
+        return (
+          <Step4ProductsServices
+            data={formData}
+            updateData={updateFormData}
+            onNext={nextStep}
+            onPrev={prevStep}
+          />
+        );
+      case 5:
+        return (
+          <Step5SuccessDrivers
+            data={formData}
+            updateData={updateFormData}
+            onNext={nextStep}
+            onPrev={prevStep}
+          />
+        );
+      case 6:
+        return (
+          <Step6Investment
+            data={formData}
+            updateData={updateFormData}
+            onNext={nextStep}
+            onPrev={prevStep}
+          />
+        );
+      case 7:
+        return (
+          <Step7Financial
+            data={formData}
+            updateData={updateFormData}
+            onSubmit={submitForm}
+            onPrev={prevStep}
+            isLoading={isLoading}
+          />
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
       <div className="max-w-2xl mx-auto">
+        {/* Progress Indicator */}
+        <div className="mb-8">
+          <ProgressIndicator currentStep={currentStep} totalSteps={totalSteps} />
+        </div>
+        
         {/* Form Card */}
         <div className="bg-card rounded-2xl p-6 sm:p-8 lg:p-10 border border-border" style={{ boxShadow: 'var(--shadow-large)' }}>
-          <Step1Objective
-            data={formData}
-            updateData={updateFormData}
-            onSubmit={submitForm}
-            isLoading={isLoading}
-          />
+          {renderStep()}
         </div>
       </div>
     </div>
