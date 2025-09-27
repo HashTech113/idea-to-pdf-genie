@@ -9,10 +9,11 @@ import { FormData } from '../MultiStepBusinessPlanForm';
 interface Step1Props {
   data: FormData;
   updateData: (data: Partial<FormData>) => void;
-  onNext: () => void;
+  onSubmit: () => void;
+  isLoading: boolean;
 }
 
-export const Step1Objective = ({ data, updateData, onNext }: Step1Props) => {
+export const Step1Objective = ({ data, updateData, onSubmit, isLoading }: Step1Props) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validate = () => {
@@ -35,9 +36,9 @@ export const Step1Objective = ({ data, updateData, onNext }: Step1Props) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleNext = () => {
+  const handleSubmit = () => {
     if (validate()) {
-      onNext();
+      onSubmit();
     }
   };
 
@@ -165,11 +166,12 @@ export const Step1Objective = ({ data, updateData, onNext }: Step1Props) => {
 
       <div className="pt-8">
         <Button
-          onClick={handleNext}
+          onClick={handleSubmit}
+          disabled={isLoading}
           className="w-full h-16 text-lg font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl transition-all duration-200"
           style={{ boxShadow: 'var(--shadow-medium)' }}
         >
-          Next Step
+          {isLoading ? 'Generating Business Plan...' : 'Generate Business Plan PDF'}
         </Button>
       </div>
     </div>
