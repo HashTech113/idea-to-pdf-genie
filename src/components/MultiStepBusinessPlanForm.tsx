@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { Step1Objective } from './steps/Step1Objective';
 import { Step2BasicInfo } from './steps/Step2BasicInfo';
 import { ProgressIndicator } from './ProgressIndicator';
 
@@ -80,22 +79,10 @@ export const MultiStepBusinessPlanForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const totalSteps = 2;
+  const totalSteps = 1;
 
   const updateFormData = (stepData: Partial<FormData>) => {
     setFormData(prev => ({ ...prev, ...stepData }));
-  };
-
-  const nextStep = () => {
-    if (currentStep < totalSteps) {
-      setCurrentStep(prev => prev + 1);
-    }
-  };
-
-  const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(prev => prev - 1);
-    }
   };
 
   const submitForm = async () => {
@@ -141,28 +128,15 @@ export const MultiStepBusinessPlanForm = () => {
   };
 
   const renderStep = () => {
-    switch (currentStep) {
-      case 1:
-        return (
-          <Step1Objective
-            data={formData}
-            updateData={updateFormData}
-            onNext={nextStep}
-          />
-        );
-      case 2:
-        return (
-          <Step2BasicInfo
-            data={formData}
-            updateData={updateFormData}
-            onNext={submitForm}
-            onPrev={prevStep}
-            isLoading={isLoading}
-          />
-        );
-      default:
-        return null;
-    }
+    return (
+      <Step2BasicInfo
+        data={formData}
+        updateData={updateFormData}
+        onNext={submitForm}
+        onPrev={() => {}} // No previous step
+        isLoading={isLoading}
+      />
+    );
   };
 
   return (

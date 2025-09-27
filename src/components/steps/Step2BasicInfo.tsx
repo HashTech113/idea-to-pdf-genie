@@ -183,16 +183,9 @@ export const Step2BasicInfo = ({ data, updateData, onNext, onPrev, isLoading }: 
 
       <div className="flex gap-4">
         <Button
-          onClick={onPrev}
-          variant="outline"
-          className="flex-1 h-12 border-primary/20 hover:border-primary/30"
-        >
-          Back
-        </Button>
-        <Button
           onClick={handleNext}
           disabled={isLoading}
-          className="flex-1 h-12 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-primary-foreground disabled:opacity-50"
+          className="w-full h-12 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-primary-foreground disabled:opacity-50"
         >
           {isLoading ? 'Generating PDF...' : 'Generate Business Plan'}
         </Button>
