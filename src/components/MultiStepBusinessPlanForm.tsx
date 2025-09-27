@@ -2,11 +2,6 @@ import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Step1Objective } from './steps/Step1Objective';
 import { Step2BasicInfo } from './steps/Step2BasicInfo';
-import { Step3CustomerGroups } from './steps/Step3CustomerGroups';
-import { Step4ProductsServices } from './steps/Step4ProductsServices';
-import { Step5SuccessDrivers } from './steps/Step5SuccessDrivers';
-import { Step6Investment } from './steps/Step6Investment';
-import { Step7Financial } from './steps/Step7Financial';
 import { ProgressIndicator } from './ProgressIndicator';
 
 export interface FormData {
@@ -85,7 +80,7 @@ export const MultiStepBusinessPlanForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const totalSteps = 7;
+  const totalSteps = 2;
 
   const updateFormData = (stepData: Partial<FormData>) => {
     setFormData(prev => ({ ...prev, ...stepData }));
@@ -160,52 +155,7 @@ export const MultiStepBusinessPlanForm = () => {
           <Step2BasicInfo
             data={formData}
             updateData={updateFormData}
-            onNext={nextStep}
-            onPrev={prevStep}
-          />
-        );
-      case 3:
-        return (
-          <Step3CustomerGroups
-            data={formData}
-            updateData={updateFormData}
-            onNext={nextStep}
-            onPrev={prevStep}
-          />
-        );
-      case 4:
-        return (
-          <Step4ProductsServices
-            data={formData}
-            updateData={updateFormData}
-            onNext={nextStep}
-            onPrev={prevStep}
-          />
-        );
-      case 5:
-        return (
-          <Step5SuccessDrivers
-            data={formData}
-            updateData={updateFormData}
-            onNext={nextStep}
-            onPrev={prevStep}
-          />
-        );
-      case 6:
-        return (
-          <Step6Investment
-            data={formData}
-            updateData={updateFormData}
-            onNext={nextStep}
-            onPrev={prevStep}
-          />
-        );
-      case 7:
-        return (
-          <Step7Financial
-            data={formData}
-            updateData={updateFormData}
-            onSubmit={submitForm}
+            onNext={submitForm}
             onPrev={prevStep}
             isLoading={isLoading}
           />

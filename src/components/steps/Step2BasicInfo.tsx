@@ -11,9 +11,10 @@ interface Step2Props {
   updateData: (data: Partial<FormData>) => void;
   onNext: () => void;
   onPrev: () => void;
+  isLoading?: boolean;
 }
 
-export const Step2BasicInfo = ({ data, updateData, onNext, onPrev }: Step2Props) => {
+export const Step2BasicInfo = ({ data, updateData, onNext, onPrev, isLoading }: Step2Props) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validate = () => {
@@ -190,9 +191,10 @@ export const Step2BasicInfo = ({ data, updateData, onNext, onPrev }: Step2Props)
         </Button>
         <Button
           onClick={handleNext}
-          className="flex-1 h-12 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-primary-foreground"
+          disabled={isLoading}
+          className="flex-1 h-12 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-primary-foreground disabled:opacity-50"
         >
-          Next Step
+          {isLoading ? 'Generating PDF...' : 'Generate Business Plan'}
         </Button>
       </div>
     </div>
