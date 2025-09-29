@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { Step2BasicInfo } from './steps/Step2BasicInfo';
 
 export interface FormData {
@@ -88,28 +89,28 @@ export const MultiStepBusinessPlanForm = () => {
     setIsLoading(true);
     
     try {
-      const response = await fetch('https://tvznnerrgaprchburewu.supabase.co/functions/v1/generate-business-plan', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2em5uZXJyZ2FwcmNoYnVyZXd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3OTAxNzUsImV4cCI6MjA3NDM2NjE3NX0._vuf_ZB8i-_GFDz2vIc_6y_6FzjeEkGTOKz90sxiEnY`,
-        },
-        body: JSON.stringify(formData),
+      const { data, error } = await supabase.functions.invoke('generate-business-plan', {
+        body: formData,
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to generate Business Plan');
+      if (error) {
+        console.error('Supabase error:', error);
+        toast({ 
+          title: 'Generation failed', 
+          description: error.message ?? 'Unknown error',
+          variant: 'destructive'
+        });
+        return;
       }
 
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      // Convert response to blob and download
+      const blob = new Blob([data], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = 'business-plan.pdf';
-      document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      URL.revokeObjectURL(url);
 
       toast({
         title: "Success!",
@@ -119,9 +120,13 @@ export const MultiStepBusinessPlanForm = () => {
       // Reset form
       setFormData(initialFormData);
       setCurrentStep(1);
-    } catch (error) {
-      console.error('Error generating Business Plan:', error);
-      alert('Error generating Business Plan');
+    } catch (err) {
+      console.error('Unexpected error:', err);
+      toast({ 
+        title: 'Generation failed', 
+        description: String(err),
+        variant: 'destructive'
+      });
     } finally {
       setIsLoading(false);
     }
