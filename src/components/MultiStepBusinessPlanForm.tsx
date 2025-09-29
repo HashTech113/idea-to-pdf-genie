@@ -88,7 +88,7 @@ export const MultiStepBusinessPlanForm = () => {
     setIsLoading(true);
     
     try {
-      const response = await fetch('https://hashirceo.app.n8n.cloud/webhook/2fcbe92b-1cd7-4ac9-987f-34dbaa1dc93f', {
+      const response = await fetch('https://tvznnerrgaprchburewu.supabase.co/functions/v1/generate-business-plan', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
