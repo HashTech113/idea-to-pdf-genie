@@ -81,6 +81,12 @@ export const MultiStepBusinessPlanForm = () => {
   const { toast } = useToast();
   const { user, session, loading } = useAuth();
 
+  const totalSteps = 1;
+
+  const updateFormData = (stepData: Partial<FormData>) => {
+    setFormData(prev => ({ ...prev, ...stepData }));
+  };
+
   // Show loading while auth is being checked
   if (loading) {
     return (
@@ -110,12 +116,6 @@ export const MultiStepBusinessPlanForm = () => {
       </div>
     );
   }
-
-  const totalSteps = 1;
-
-  const updateFormData = (stepData: Partial<FormData>) => {
-    setFormData(prev => ({ ...prev, ...stepData }));
-  };
 
   const submitForm = async () => {
     if (!user || !session) {
@@ -162,7 +162,11 @@ export const MultiStepBusinessPlanForm = () => {
       setCurrentStep(1);
     } catch (error) {
       console.error('Error generating Business Plan:', error);
-      alert('Error generating Business Plan');
+      toast({
+        title: "Error",
+        description: "Failed to generate business plan. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
