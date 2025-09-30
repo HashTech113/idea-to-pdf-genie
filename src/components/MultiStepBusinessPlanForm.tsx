@@ -86,7 +86,11 @@ export const MultiStepBusinessPlanForm = () => {
 
   const submitForm = async () => {
     setIsLoading(true);
-    
+
+    // 30s client-side timeout to avoid hanging requests
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30_000);
+
     try {
       const response = await fetch('https://tvznnerrgaprchburewu.supabase.co/functions/v1/generate-business-plan', {
         method: 'POST',
@@ -94,12 +98,16 @@ export const MultiStepBusinessPlanForm = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(formData),
+        signal: controller.signal,
       });
 
+      // If the edge function failed, surface its error text
       if (!response.ok) {
-        throw new Error('Failed to generate Business Plan');
+        const text = await response.text().catch(() => '');
+        throw new Error(`Generate failed (${response.status}): ${text || 'No error message'}`);
       }
 
+      // Expect a PDF; stream to blob and download
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -107,7 +115,7 @@ export const MultiStepBusinessPlanForm = () => {
       link.download = 'business-plan.pdf';
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
+      link.remove();
       window.URL.revokeObjectURL(url);
 
       toast({
@@ -118,10 +126,18 @@ export const MultiStepBusinessPlanForm = () => {
       // Reset form
       setFormData(initialFormData);
       setCurrentStep(1);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating Business Plan:', error);
-      alert('Error generating Business Plan');
+      
+      // Show detailed error message
+      const errorMessage = error?.message ?? 'Request failed or timed out';
+      toast({
+        title: 'Error generating Business Plan',
+        description: errorMessage,
+        variant: 'destructive',
+      });
     } finally {
+      clearTimeout(timeout);
       setIsLoading(false);
     }
   };
