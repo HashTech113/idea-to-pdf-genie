@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -62,6 +63,67 @@ serve(async (req) => {
 
     console.log('Successfully generated PDF, size:', arrayBuffer.byteLength);
 
+    // Initialize Supabase client with service role key
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
+
+    // Build a unique file path
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const safeName = (requestBody.businessName || 'business')
+      .toLowerCase()
+      .replace(/[^a-z0-9\-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    
+    const fileName = `${safeName}-${now.getTime()}.pdf`;
+    const path = `business-plans/${yyyy}/${mm}/${dd}/${fileName}`;
+
+    // Upload to Storage
+    const { error: uploadError } = await supabase
+      .storage
+      .from('business-plans')
+      .upload(path, blob, { contentType: 'application/pdf', upsert: false });
+
+    if (uploadError) {
+      console.error('Storage upload error:', uploadError);
+      return new Response(
+        JSON.stringify({ ok: false, error: 'Failed to save PDF to storage', details: uploadError.message }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Get public URL
+    const { data: publicUrlData } = supabase
+      .storage
+      .from('business-plans')
+      .getPublicUrl(path);
+    
+    const pdfUrl = publicUrlData?.publicUrl ?? null;
+
+    // Insert database record
+    const { error: dbError } = await supabase
+      .from('business_plans')
+      .insert({
+        business_name: requestBody.businessName || 'Untitled Business',
+        form_data: requestBody,
+        pdf_path: path,
+        pdf_url: pdfUrl,
+      });
+
+    if (dbError) {
+      console.error('Database insert error:', dbError);
+      return new Response(
+        JSON.stringify({ ok: false, error: 'Failed to save plan record', details: dbError.message }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Successfully saved PDF and record:', { path, pdfUrl });
+
+    // Return the PDF for download
     return new Response(arrayBuffer, {
       status: 200,
       headers: {
