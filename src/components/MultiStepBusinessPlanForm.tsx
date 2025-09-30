@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Step2BasicInfo } from './steps/Step2BasicInfo';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface FormData {
   // Step 1
@@ -88,19 +89,22 @@ export const MultiStepBusinessPlanForm = () => {
     setIsLoading(true);
     
     try {
-      const response = await fetch('https://tvznnerrgaprchburewu.supabase.co/functions/v1/generate-business-plan', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+      const { data, error } = await supabase.functions.invoke('generate-business-plan', {
+        body: formData,
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to generate Business Plan');
+      if (error) {
+        console.error('Supabase error:', error);
+        toast({
+          title: "Generation failed",
+          description: error.message || "Failed to generate Business Plan",
+          variant: "destructive"
+        });
+        return;
       }
 
-      const blob = await response.blob();
+      // data is already a blob from the edge function
+      const blob = data instanceof Blob ? data : new Blob([JSON.stringify(data)], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -120,7 +124,11 @@ export const MultiStepBusinessPlanForm = () => {
       setCurrentStep(1);
     } catch (error) {
       console.error('Error generating Business Plan:', error);
-      alert('Error generating Business Plan');
+      toast({
+        title: "Generation failed",
+        description: error instanceof Error ? error.message : "Unexpected error occurred",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }

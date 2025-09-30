@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
+import { supabase } from '@/integrations/supabase/client';
 
 const signUpSchema = z.object({
   email: z.string().trim().email({ message: "Invalid email address" }).max(255, { message: "Email must be less than 255 characters" }),
@@ -58,30 +59,26 @@ const OTPSignUp = () => {
     setIsLoading(true);
     
     try {
-      const response = await fetch('https://tvznnerrgaprchburewu.supabase.co/auth/v1/otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2em5uZXJyZ2FwcmNoYnVyZXd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3OTAxNzUsImV4cCI6MjA3NDM2NjE3NX0._vuf_ZB8i-_GFDz2vIc_6y_6FzjeEkGTOKz90sxiEnY'
+      const { data, error } = await supabase.auth.signInWithOtp({
+        email: formData.email,
+        options: {
+          shouldCreateUser: true,
         },
-        body: JSON.stringify({
-          email: formData.email,
-          type: 'signup'
-        })
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to send OTP');
+      if (error) {
+        throw new Error(error.message || 'Failed to send OTP');
       }
 
-      toast({
-        title: "Check your email",
-        description: "We've sent you a verification code to complete your signup.",
-      });
-      
-      // Navigate to OTP verification page with email
-      navigate('/verify-otp', { state: { email: formData.email, password: formData.password } });
+      if (data) {
+        toast({
+          title: "Check your email",
+          description: "We've sent you a verification code to complete your signup.",
+        });
+        
+        // Navigate to OTP verification page with email
+        navigate('/verify-otp', { state: { email: formData.email, password: formData.password } });
+      }
     } catch (error: any) {
       toast({
         title: "Sign Up Error",

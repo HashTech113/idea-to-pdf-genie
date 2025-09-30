@@ -4,6 +4,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 export const BusinessIdeaForm = () => {
   const [idea, setIdea] = useState('');
@@ -26,23 +27,20 @@ export const BusinessIdeaForm = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('https://tvznnerrgaprchburewu.supabase.co/functions/v1/generate-business-plan', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke('generate-business-plan', {
+        body: {
           idea: idea.trim(),
           location: location.trim(),
-        }),
+        },
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to generate PDF');
+      if (error) {
+        console.error('Supabase error:', error);
+        throw new Error(error.message || 'Failed to generate PDF');
       }
 
-      // Get the PDF blob from the response
-      const blob = await response.blob();
+      // data is already a blob from the edge function
+      const blob = data instanceof Blob ? data : new Blob([JSON.stringify(data)], { type: 'application/pdf' });
       
       // Create a download link and trigger download
       const url = window.URL.createObjectURL(blob);
@@ -64,7 +62,11 @@ export const BusinessIdeaForm = () => {
       setLocation('');
     } catch (error) {
       console.error('Error generating PDF:', error);
-      alert('Error generating PDF');
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to generate PDF. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
