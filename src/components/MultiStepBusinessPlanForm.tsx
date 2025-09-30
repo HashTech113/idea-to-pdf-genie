@@ -95,20 +95,49 @@ export const MultiStepBusinessPlanForm = () => {
 
       if (error) {
         console.error('Supabase error:', error);
+        
+        // Try to extract detailed error message
+        let errorMessage = error.message || "Failed to generate Business Plan";
+        let errorDetails = "";
+        
+        // Check if there's a context with more details
+        if (error.context) {
+          try {
+            const context = typeof error.context === 'string' ? JSON.parse(error.context) : error.context;
+            if (context.step) errorDetails += `Step: ${context.step}\n`;
+            if (context.message) errorMessage = context.message;
+            if (context.details) errorDetails += `Details: ${context.details}`;
+          } catch (e) {
+            // If parsing fails, just use the raw context
+            errorDetails = String(error.context);
+          }
+        }
+        
         toast({
           title: "Generation failed",
-          description: error.message || "Failed to generate Business Plan",
-          variant: "destructive"
+          description: errorDetails ? `${errorMessage}\n\n${errorDetails}` : errorMessage,
+          variant: "destructive",
+          duration: 10000, // Longer duration for error messages
         });
         return;
       }
 
       // data is already a blob from the edge function
       const blob = data instanceof Blob ? data : new Blob([JSON.stringify(data)], { type: 'application/pdf' });
+      
+      if (blob.size === 0) {
+        toast({
+          title: "Generation failed",
+          description: "Received empty PDF file",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'business-plan.pdf';
+      link.download = `${formData.businessName || 'business'}-plan.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -127,7 +156,8 @@ export const MultiStepBusinessPlanForm = () => {
       toast({
         title: "Generation failed",
         description: error instanceof Error ? error.message : "Unexpected error occurred",
-        variant: "destructive"
+        variant: "destructive",
+        duration: 10000,
       });
     } finally {
       setIsLoading(false);
