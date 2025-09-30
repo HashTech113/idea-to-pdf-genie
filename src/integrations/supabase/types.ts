@@ -14,54 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
-      business_plans: {
-        Row: {
-          business_name: string
-          created_at: string
-          form_data: Json
-          id: string
-          pdf_path: string
-          pdf_url: string | null
-          user_id: string | null
-        }
-        Insert: {
-          business_name: string
-          created_at?: string
-          form_data: Json
-          id?: string
-          pdf_path: string
-          pdf_url?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          business_name?: string
-          created_at?: string
-          form_data?: Json
-          id?: string
-          pdf_path?: string
-          pdf_url?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
+          business_desc: string | null
+          business_name: string | null
           created_at: string
+          customer_region: string | null
+          delivery_method: string | null
+          employee_count: number | null
+          id: string
           name: string | null
+          offer_type: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          business_desc?: string | null
+          business_name?: string | null
           created_at?: string
+          customer_region?: string | null
+          delivery_method?: string | null
+          employee_count?: number | null
+          id?: string
           name?: string | null
+          offer_type?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_desc?: string | null
+          business_name?: string | null
+          created_at?: string
+          customer_region?: string | null
+          delivery_method?: string | null
+          employee_count?: number | null
+          id?: string
+          name?: string | null
+          offer_type?: string | null
           updated_at?: string
           user_id?: string
         }
+        Relationships: []
+      }
+      "user's_list": {
+        Row: {
+          created_at: string
+          id: number
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+        }
         Update: {
           created_at?: string
-          name?: string | null
-          updated_at?: string
-          user_id?: string
+          id?: number
         }
         Relationships: []
       }

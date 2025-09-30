@@ -52,9 +52,9 @@ const SignUp = () => {
     const validation = signUpSchema.safeParse(formData);
     if (!validation.success) {
       const newErrors: Record<string, string> = {};
-      validation.error.issues.forEach((issue) => {
-        if (issue.path[0]) {
-          newErrors[issue.path[0] as string] = issue.message;
+      validation.error.errors.forEach((error) => {
+        if (error.path[0]) {
+          newErrors[error.path[0] as string] = error.message;
         }
       });
       setErrors(newErrors);

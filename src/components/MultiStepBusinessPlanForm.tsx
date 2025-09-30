@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { Step2BasicInfo } from './steps/Step2BasicInfo';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { Step2BasicInfo } from './steps/Step2BasicInfo';
 
 export interface FormData {
   // Step 1
@@ -78,6 +79,37 @@ export const MultiStepBusinessPlanForm = () => {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { user, session, loading } = useAuth();
+
+  // Show loading while auth is being checked
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect to login if not authenticated
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <h2 className="text-2xl font-bold text-foreground mb-4">Authentication Required</h2>
+          <p className="text-muted-foreground mb-6">Please log in to access the business plan generator.</p>
+          <a 
+            href="/login" 
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+          >
+            Go to Login
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   const totalSteps = 1;
 
@@ -86,58 +118,35 @@ export const MultiStepBusinessPlanForm = () => {
   };
 
   const submitForm = async () => {
+    if (!user || !session) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to generate your business plan.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     
     try {
-      const { data, error } = await supabase.functions.invoke('generate-business-plan', {
+      const response = await supabase.functions.invoke('generate-business-plan', {
         body: formData,
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       });
 
-      if (error) {
-        console.error('Supabase error:', error);
-        
-        // Try to extract detailed error message
-        let errorMessage = error.message || "Failed to generate Business Plan";
-        let errorDetails = "";
-        
-        // Check if there's a context with more details
-        if (error.context) {
-          try {
-            const context = typeof error.context === 'string' ? JSON.parse(error.context) : error.context;
-            if (context.step) errorDetails += `Step: ${context.step}\n`;
-            if (context.message) errorMessage = context.message;
-            if (context.details) errorDetails += `Details: ${context.details}`;
-          } catch (e) {
-            // If parsing fails, just use the raw context
-            errorDetails = String(error.context);
-          }
-        }
-        
-        toast({
-          title: "Generation failed",
-          description: errorDetails ? `${errorMessage}\n\n${errorDetails}` : errorMessage,
-          variant: "destructive",
-          duration: 10000, // Longer duration for error messages
-        });
-        return;
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to generate Business Plan');
       }
 
-      // data is already a blob from the edge function
-      const blob = data instanceof Blob ? data : new Blob([JSON.stringify(data)], { type: 'application/pdf' });
-      
-      if (blob.size === 0) {
-        toast({
-          title: "Generation failed",
-          description: "Received empty PDF file",
-          variant: "destructive"
-        });
-        return;
-      }
-      
+      // Convert the response data to a blob if it's not already
+      const blob = response.data instanceof Blob ? response.data : new Blob([response.data]);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${formData.businessName || 'business'}-plan.pdf`;
+      link.download = 'business-plan.pdf';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -145,7 +154,7 @@ export const MultiStepBusinessPlanForm = () => {
 
       toast({
         title: "Success!",
-        description: "Your business plan PDF has been generated and downloaded.",
+        description: "Your business info has been saved and your business plan PDF has been generated.",
       });
 
       // Reset form
@@ -153,12 +162,7 @@ export const MultiStepBusinessPlanForm = () => {
       setCurrentStep(1);
     } catch (error) {
       console.error('Error generating Business Plan:', error);
-      toast({
-        title: "Generation failed",
-        description: error instanceof Error ? error.message : "Unexpected error occurred",
-        variant: "destructive",
-        duration: 10000,
-      });
+      alert('Error generating Business Plan');
     } finally {
       setIsLoading(false);
     }
