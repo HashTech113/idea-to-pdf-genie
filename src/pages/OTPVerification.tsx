@@ -49,7 +49,7 @@ const OTPVerification = () => {
     const validation = verificationSchema.safeParse(formData);
     if (!validation.success) {
       const newErrors: Record<string, string> = {};
-      validation.error.errors.forEach((error) => {
+      validation.error.issues.forEach((error) => {
         if (error.path[0]) {
           newErrors[error.path[0] as string] = error.message;
         }
