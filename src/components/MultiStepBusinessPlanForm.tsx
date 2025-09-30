@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { Step2BasicInfo } from './steps/Step2BasicInfo';
 
 export interface FormData {
@@ -89,28 +88,27 @@ export const MultiStepBusinessPlanForm = () => {
     setIsLoading(true);
     
     try {
-      const { data, error } = await supabase.functions.invoke('generate-business-plan', {
-        body: formData,
+      const response = await fetch('https://tvznnerrgaprchburewu.supabase.co/functions/v1/generate-business-plan', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
       });
 
-      if (error) {
-        console.error('Supabase error:', error);
-        toast({ 
-          title: 'Generation failed', 
-          description: error.message ?? 'Unknown error',
-          variant: 'destructive'
-        });
-        return;
+      if (!response.ok) {
+        throw new Error('Failed to generate Business Plan');
       }
 
-      // Convert response to blob and download
-      const blob = new Blob([data], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = 'business-plan.pdf';
+      document.body.appendChild(link);
       link.click();
-      URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
 
       toast({
         title: "Success!",
@@ -120,13 +118,9 @@ export const MultiStepBusinessPlanForm = () => {
       // Reset form
       setFormData(initialFormData);
       setCurrentStep(1);
-    } catch (err) {
-      console.error('Unexpected error:', err);
-      toast({ 
-        title: 'Generation failed', 
-        description: String(err),
-        variant: 'destructive'
-      });
+    } catch (error) {
+      console.error('Error generating Business Plan:', error);
+      alert('Error generating Business Plan');
     } finally {
       setIsLoading(false);
     }
