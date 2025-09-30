@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Step2BasicInfo } from './steps/Step2BasicInfo';
-import { supabase } from '@/integrations/supabase/client';
 
 export interface FormData {
   // Step 1
@@ -88,56 +87,20 @@ export const MultiStepBusinessPlanForm = () => {
   const submitForm = async () => {
     setIsLoading(true);
     
-    // Create AbortController with 30s timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
-    
     try {
-      console.log('Calling generate-business-plan function...');
-      
-      const { data, error } = await supabase.functions.invoke('generate-business-plan', {
-        body: formData,
+      const response = await fetch('https://tvznnerrgaprchburewu.supabase.co/functions/v1/generate-business-plan', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
       });
 
-      clearTimeout(timeoutId);
-
-      if (error) {
-        console.error('Function error:', error);
-        
-        // Try to extract detailed error message
-        let errorMessage = 'Failed to generate Business Plan';
-        
-        if (error.message) {
-          errorMessage = error.message;
-        }
-        
-        // If the error contains structured error info from our function
-        if (error.context) {
-          const ctx = error.context as any;
-          if (ctx.step && ctx.message) {
-            errorMessage = `Error at ${ctx.step}: ${ctx.message}`;
-            if (ctx.details) {
-              errorMessage += `\n${ctx.details}`;
-            }
-          }
-        }
-        
-        throw new Error(errorMessage);
+      if (!response.ok) {
+        throw new Error('Failed to generate Business Plan');
       }
 
-      // Check if we got a blob back (PDF)
-      if (!data) {
-        throw new Error('No data returned from function');
-      }
-
-      // Convert the response to a blob
-      const blob = new Blob([data], { type: 'application/pdf' });
-      
-      if (blob.size === 0) {
-        throw new Error('Generated PDF is empty');
-      }
-
-      // Trigger download
+      const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -155,26 +118,10 @@ export const MultiStepBusinessPlanForm = () => {
       // Reset form
       setFormData(initialFormData);
       setCurrentStep(1);
-      
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error generating Business Plan:', error);
-      
-      let errorMessage = 'Error generating Business Plan';
-      
-      if (error.name === 'AbortError') {
-        errorMessage = 'Request timed out after 30 seconds. Please try again.';
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-        duration: 10000, // Show error for 10 seconds
-      });
+      alert('Error generating Business Plan');
     } finally {
-      clearTimeout(timeoutId);
       setIsLoading(false);
     }
   };

@@ -48,7 +48,7 @@ const Login = () => {
     const validation = loginSchema.safeParse(formData);
     if (!validation.success) {
       const newErrors: Record<string, string> = {};
-      validation.error.issues.forEach((error) => {
+      validation.error.errors.forEach((error) => {
         if (error.path[0]) {
           newErrors[error.path[0] as string] = error.message;
         }
