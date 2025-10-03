@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Step2BasicInfo } from './steps/Step2BasicInfo';
 import { PreviewModal } from './PreviewModal';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface FormData {
   // Step 1
@@ -79,6 +80,7 @@ export const MultiStepBusinessPlanForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [isPaidUser, setIsPaidUser] = useState(false);
   const { toast } = useToast();
 
   const totalSteps = 1;
@@ -101,47 +103,78 @@ export const MultiStepBusinessPlanForm = () => {
   const submitForm = async () => {
     setIsLoading(true);
 
-    // 30s client-side timeout to avoid hanging requests
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30_000);
-
     try {
-      const response = await fetch('https://tvznnerrgaprchburewu.supabase.co/functions/v1/generate-business-plan', {
+      // Get current user session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('You must be logged in to generate a business plan');
+      }
+
+      // Step 1: Generate PDF via n8n webhook (stores in Supabase Storage)
+      const generateResponse = await fetch('https://tvznnerrgaprchburewu.supabase.co/functions/v1/generate-business-plan', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(formData),
-        signal: controller.signal,
       });
 
-      // If the edge function failed, surface its error text
-      if (!response.ok) {
-        const text = await response.text().catch(() => '');
-        throw new Error(`Generate failed (${response.status}): ${text || 'No error message'}`);
+      if (!generateResponse.ok) {
+        const text = await generateResponse.text().catch(() => '');
+        throw new Error(`Generate failed (${generateResponse.status}): ${text || 'No error message'}`);
       }
 
-      // Expect a PDF; sanitize and create blob URL for preview
-      const blob = await response.blob();
-      const url = sanitizePdfUrl(blob);
-      
-      if (!url) {
-        throw new Error('Invalid PDF response from server');
+      // Get reportId from n8n response (assuming it returns { reportId: "..." })
+      const { reportId } = await generateResponse.json();
+      if (!reportId) {
+        throw new Error('No reportId returned from generation');
       }
+
+      // Step 2: Call get-report to retrieve plan-based access
+      const reportResponse = await fetch(
+        `https://tvznnerrgaprchburewu.supabase.co/functions/v1/get-report?reportId=${reportId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+        }
+      );
+
+      if (!reportResponse.ok) {
+        throw new Error('Failed to retrieve report');
+      }
+
+      const contentType = reportResponse.headers.get('content-type');
       
-      setPdfUrl(url);
-      
+      if (contentType?.includes('application/json')) {
+        // Pro user: response is JSON with signed URL
+        const reportData = await reportResponse.json();
+        const pdfResponse = await fetch(reportData.url);
+        const pdfBlob = await pdfResponse.blob();
+        const url = window.URL.createObjectURL(pdfBlob);
+        setPdfUrl(url);
+        setIsPaidUser(true);
+      } else {
+        // Free user: response is the preview PDF binary
+        const blob = await reportResponse.blob();
+        const url = sanitizePdfUrl(blob);
+        if (!url) {
+          throw new Error('Invalid PDF response from server');
+        }
+        setPdfUrl(url);
+        setIsPaidUser(false);
+      }
+
       toast({
         title: "Success!",
-        description: "Your business plan preview is ready.",
+        description: "Your business plan is ready.",
       });
 
-      // Show preview modal instead of downloading
       setShowPreviewModal(true);
     } catch (error: any) {
       console.error('Error generating Business Plan:', error);
       
-      // Show detailed error message
       const errorMessage = error?.message ?? 'Request failed or timed out';
       toast({
         title: 'Error generating Business Plan',
@@ -149,7 +182,6 @@ export const MultiStepBusinessPlanForm = () => {
         variant: 'destructive',
       });
     } finally {
-      clearTimeout(timeout);
       setIsLoading(false);
     }
   };
@@ -181,6 +213,7 @@ export const MultiStepBusinessPlanForm = () => {
         open={showPreviewModal} 
         onClose={() => setShowPreviewModal(false)}
         pdfUrl={pdfUrl}
+        isPaidUser={isPaidUser}
       />
     </>
   );

@@ -1,35 +1,20 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
-import { Loader2, Lock, Download } from "lucide-react";
+import { Loader2, Lock, Download, Crown } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface PreviewModalProps {
   open: boolean;
   onClose: () => void;
   pdfUrl: string | null;
+  isPaidUser: boolean;
 }
 
-export const PreviewModal = ({ open, onClose, pdfUrl }: PreviewModalProps) => {
-  const [isPaid, setIsPaid] = useState(false);
-  const [isRedirecting, setIsRedirecting] = useState(false);
-
-  // Check for payment completion on mount and when URL changes
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('paid') === 'true') {
-      setIsPaid(true);
-    }
-  }, []);
-
-  const handlePayToUnlock = () => {
-    setIsRedirecting(true);
-    // Replace with your actual checkout URL
-    const checkoutUrl = 'YOUR_CHECKOUT_URL';
-    window.location.href = checkoutUrl;
-  };
+export const PreviewModal = ({ open, onClose, pdfUrl, isPaidUser }: PreviewModalProps) => {
 
   const handleDownload = () => {
-    if (!pdfUrl || !isPaid) return;
+    if (!pdfUrl || !isPaidUser) return;
     
     const link = document.createElement('a');
     link.href = pdfUrl;
@@ -43,8 +28,8 @@ export const PreviewModal = ({ open, onClose, pdfUrl }: PreviewModalProps) => {
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-[90vw] w-full h-[90vh] flex flex-col bg-white">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-poppins text-gray-900">
-            Preview report (first 2 pages)
+          <DialogTitle className="text-2xl font-poppins text-foreground">
+            {isPaidUser ? 'Your Business Plan' : 'Preview Report (First 2 Pages)'}
           </DialogTitle>
         </DialogHeader>
 
@@ -76,39 +61,39 @@ export const PreviewModal = ({ open, onClose, pdfUrl }: PreviewModalProps) => {
           )}
         </div>
 
-        <DialogFooter className="flex flex-col sm:flex-row items-center gap-4 border-t border-gray-200 pt-4">
-          <p className="text-sm text-gray-600 flex-1">
-            {isPaid 
-              ? "Payment complete! You can now download the full report." 
-              : "Download is locked until payment is completed."}
-          </p>
+        <DialogFooter className="flex flex-col gap-4 border-t border-border pt-4">
+          {!isPaidUser && (
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <Crown className="w-5 h-5 text-primary mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="font-semibold text-foreground mb-1">Unlock Full Business Plan</h4>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Get unlimited downloads and access to the complete market research report with AI-powered insights.
+                  </p>
+                  <Link to="/pricing">
+                    <Button className="w-full sm:w-auto">
+                      Upgrade to Pro
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
           
-          <div className="flex gap-2">
-            {!isPaid && (
-              <Button
-                onClick={handlePayToUnlock}
-                disabled={isRedirecting}
-                className="bg-indigo-600 text-white hover:bg-indigo-700"
-              >
-                {isRedirecting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Redirecting...
-                  </>
-                ) : (
-                  <>Pay to Unlock</>
-                )}
-              </Button>
-            )}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-sm text-muted-foreground flex-1">
+              {isPaidUser 
+                ? "Your full business plan is ready for download." 
+                : "Free users can preview the first 2 pages. Upgrade for full access."}
+            </p>
             
             <Button
               onClick={handleDownload}
-              disabled={!isPaid || !pdfUrl}
-              className={isPaid 
-                ? "bg-indigo-600 text-white hover:bg-indigo-700" 
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"}
+              disabled={!isPaidUser || !pdfUrl}
+              variant={isPaidUser ? "default" : "outline"}
             >
-              {isPaid ? (
+              {isPaidUser ? (
                 <>
                   <Download className="w-4 h-4 mr-2" />
                   Download PDF
@@ -116,7 +101,7 @@ export const PreviewModal = ({ open, onClose, pdfUrl }: PreviewModalProps) => {
               ) : (
                 <>
                   <Lock className="w-4 h-4 mr-2" />
-                  Download PDF (locked)
+                  Locked
                 </>
               )}
             </Button>
