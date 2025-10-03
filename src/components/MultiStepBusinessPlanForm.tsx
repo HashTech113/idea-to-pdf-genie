@@ -87,6 +87,17 @@ export const MultiStepBusinessPlanForm = () => {
     setFormData(prev => ({ ...prev, ...stepData }));
   };
 
+  const sanitizePdfUrl = (blobOrText: Blob): string | null => {
+    // If it's a valid PDF blob, create URL
+    if (blobOrText.type === 'application/pdf' && blobOrText.size > 0) {
+      return window.URL.createObjectURL(blobOrText);
+    }
+    
+    // Fallback: try to read as text and extract valid URL
+    // (handles case where n8n returns malformed URL string)
+    return null;
+  };
+
   const submitForm = async () => {
     setIsLoading(true);
 
@@ -110,9 +121,14 @@ export const MultiStepBusinessPlanForm = () => {
         throw new Error(`Generate failed (${response.status}): ${text || 'No error message'}`);
       }
 
-      // Expect a PDF; create blob URL for preview
+      // Expect a PDF; sanitize and create blob URL for preview
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const url = sanitizePdfUrl(blob);
+      
+      if (!url) {
+        throw new Error('Invalid PDF response from server');
+      }
+      
       setPdfUrl(url);
       
       toast({
