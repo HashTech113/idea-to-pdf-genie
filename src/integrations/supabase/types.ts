@@ -14,42 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
-      profiles: {
+      jobs: {
         Row: {
           created_at: string
+          error_message: string | null
+          form_data: Json
           id: string
-          name: string | null
+          report_id: string | null
+          status: string
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          error_message?: string | null
+          form_data: Json
           id?: string
-          name?: string | null
+          report_id?: string | null
+          status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          error_message?: string | null
+          form_data?: Json
           id?: string
-          name?: string | null
+          report_id?: string | null
+          status?: string
           updated_at?: string
           user_id?: string
         }
         Relationships: []
       }
-      "user's_list": {
+      profiles: {
         Row: {
           created_at: string
-          id: number
+          name: string | null
+          plan: string | null
+          updated_at: string
+          user_id: string
         }
         Insert: {
           created_at?: string
-          id?: number
+          name?: string | null
+          plan?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Update: {
           created_at?: string
-          id?: number
+          name?: string | null
+          plan?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
