@@ -62,9 +62,6 @@ const OTPSignUp = () => {
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`
-        }
       });
 
       if (error) {
@@ -72,12 +69,12 @@ const OTPSignUp = () => {
       }
 
       toast({
-        title: "Check your email",
-        description: "We've sent you a confirmation link to complete your signup.",
+        title: "Account created successfully",
+        description: "You can now log in with your credentials.",
       });
       
-      // Navigate to confirmation page
-      navigate('/verify-otp', { state: { email: formData.email } });
+      // Navigate to login page
+      navigate('/login');
     } catch (error: any) {
       toast({
         title: "Sign Up Error",
@@ -137,7 +134,7 @@ const OTPSignUp = () => {
               className="w-full bg-black text-white hover:bg-gray-800" 
               disabled={isLoading}
             >
-              {isLoading ? "Sending confirmation..." : "Sign Up"}
+              {isLoading ? "Creating account..." : "Sign Up"}
             </Button>
           </form>
         </CardContent>
