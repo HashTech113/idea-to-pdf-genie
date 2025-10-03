@@ -2,8 +2,6 @@ import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Step2BasicInfo } from './steps/Step2BasicInfo';
 import { PreviewModal } from './PreviewModal';
-import { supabase } from '@/integrations/supabase/client';
-import { fetchWithTimeout } from '@/lib/fetchWithTimeout';
 
 export interface FormData {
   // Step 1
@@ -81,7 +79,6 @@ export const MultiStepBusinessPlanForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  const [reportType, setReportType] = useState<'preview' | 'full'>('preview');
   const { toast } = useToast();
 
   const totalSteps = 1;
@@ -90,127 +87,61 @@ export const MultiStepBusinessPlanForm = () => {
     setFormData(prev => ({ ...prev, ...stepData }));
   };
 
-  const pollJobStatus = async (jobId: string, accessToken: string): Promise<string> => {
-    const maxAttempts = 60; // 3 minutes max (60 * 3s)
-    let attempts = 0;
-
-    while (attempts < maxAttempts) {
-      try {
-        const response = await fetchWithTimeout(
-          `https://tvznnerrgaprchburewu.supabase.co/functions/v1/job-status?jobId=${jobId}`,
-          {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${accessToken}`,
-            },
-          },
-          10000 // 10s timeout per poll
-        );
-
-        if (!response.ok) {
-          throw new Error(`Failed to check job status: ${response.status}`);
-        }
-
-        const result = await response.json();
-        console.log('Job status:', result.status);
-
-        if (result.status === 'done') {
-          if (!result.reportId) {
-            throw new Error('Job completed but no reportId returned');
-          }
-          return result.reportId;
-        }
-
-        if (result.status === 'failed') {
-          throw new Error(result.errorMessage || 'Job failed');
-        }
-
-        // Still processing, wait 3s and try again
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        attempts++;
-      } catch (error) {
-        console.error('Error polling job status:', error);
-        throw error;
-      }
+  const sanitizePdfUrl = (blobOrText: Blob): string | null => {
+    // If it's a valid PDF blob, create URL
+    if (blobOrText.type === 'application/pdf' && blobOrText.size > 0) {
+      return window.URL.createObjectURL(blobOrText);
     }
-
-    throw new Error('Job timed out after 3 minutes');
+    
+    // Fallback: try to read as text and extract valid URL
+    // (handles case where n8n returns malformed URL string)
+    return null;
   };
 
   const submitForm = async () => {
     setIsLoading(true);
 
+    // 30s client-side timeout to avoid hanging requests
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30_000);
+
     try {
-      // Get current session
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('You must be logged in to generate a business plan');
-      }
-
-      // Submit job to generate-business-plan
-      const submitResponse = await fetchWithTimeout(
-        'https://tvznnerrgaprchburewu.supabase.co/functions/v1/generate-business-plan',
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(formData),
+      const response = await fetch('https://tvznnerrgaprchburewu.supabase.co/functions/v1/generate-business-plan', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        120000 // 2 minute timeout
-      );
-
-      if (!submitResponse.ok) {
-        const errorText = await submitResponse.text().catch(() => '');
-        throw new Error(`Failed to submit job: ${errorText || submitResponse.statusText}`);
-      }
-
-      const { jobId } = await submitResponse.json();
-      console.log('Job submitted:', jobId);
-
-      toast({
-        title: "Processing...",
-        description: "Your business plan is being generated. This may take a few minutes.",
+        body: JSON.stringify(formData),
+        signal: controller.signal,
       });
 
-      // Poll for job completion
-      const reportId = await pollJobStatus(jobId, session.access_token);
-      console.log('Job completed, reportId:', reportId);
-
-      // Get the report (preview or full based on user plan)
-      const reportResponse = await fetchWithTimeout(
-        `https://tvznnerrgaprchburewu.supabase.co/functions/v1/get-report?reportId=${reportId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-        },
-        30000 // 30s timeout
-      );
-
-      if (!reportResponse.ok) {
-        throw new Error('Failed to retrieve report');
+      // If the edge function failed, surface its error text
+      if (!response.ok) {
+        const text = await response.text().catch(() => '');
+        throw new Error(`Generate failed (${response.status}): ${text || 'No error message'}`);
       }
 
-      const reportData = await reportResponse.json();
-      console.log('Report data:', reportData);
-
-      setPdfUrl(reportData.url);
-      setReportType(reportData.type);
+      // Expect a PDF; sanitize and create blob URL for preview
+      const blob = await response.blob();
+      const url = sanitizePdfUrl(blob);
+      
+      if (!url) {
+        throw new Error('Invalid PDF response from server');
+      }
+      
+      setPdfUrl(url);
       
       toast({
         title: "Success!",
-        description: reportData.type === 'preview' 
-          ? "Your business plan preview is ready." 
-          : "Your full business plan is ready.",
+        description: "Your business plan preview is ready.",
       });
 
+      // Show preview modal instead of downloading
       setShowPreviewModal(true);
     } catch (error: any) {
       console.error('Error generating Business Plan:', error);
       
+      // Show detailed error message
       const errorMessage = error?.message ?? 'Request failed or timed out';
       toast({
         title: 'Error generating Business Plan',
@@ -218,6 +149,7 @@ export const MultiStepBusinessPlanForm = () => {
         variant: 'destructive',
       });
     } finally {
+      clearTimeout(timeout);
       setIsLoading(false);
     }
   };
@@ -249,7 +181,6 @@ export const MultiStepBusinessPlanForm = () => {
         open={showPreviewModal} 
         onClose={() => setShowPreviewModal(false)}
         pdfUrl={pdfUrl}
-        reportType={reportType}
       />
     </>
   );

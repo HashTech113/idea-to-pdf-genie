@@ -53,9 +53,3 @@ enable_confirmations = false
 
 [functions.generate-business-plan]
 verify_jwt = false
-
-[functions.job-status]
-verify_jwt = false
-
-[functions.get-report]
-verify_jwt = false
