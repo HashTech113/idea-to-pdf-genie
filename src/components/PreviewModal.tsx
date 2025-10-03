@@ -1,30 +1,88 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Lock, Download } from "lucide-react";
+import { Loader2, Download } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import type { FormData } from "./MultiStepBusinessPlanForm";
 
 interface PreviewModalProps {
   open: boolean;
   onClose: () => void;
-  pdfUrl: string | null;
+  formData: FormData;
 }
 
-export const PreviewModal = ({ open, onClose, pdfUrl }: PreviewModalProps) => {
+export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => {
   const navigate = useNavigate();
-  const [isPaid, setIsPaid] = useState(false);
-  const [isRedirecting, setIsRedirecting] = useState(false);
+  const { toast } = useToast();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
-  // Check for payment completion on mount and when URL changes
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('paid') === 'true') {
-      setIsPaid(true);
-    }
-  }, []);
-
-  const handleViewOrDownload = () => {
+  const handleViewPricing = () => {
     navigate('/pricing');
+  };
+
+  const handleDownload = async () => {
+    setIsGenerating(true);
+
+    try {
+      toast({
+        title: "Generating your business plan...",
+        description: "This may take a few moments.",
+      });
+
+      const response = await fetch('https://tvznnerrgaprchburewu.supabase.co/functions/v1/generate-business-plan', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        const text = await response.text().catch(() => '');
+        throw new Error(`Generate failed (${response.status}): ${text || 'No error message'}`);
+      }
+
+      const blob = await response.blob();
+      
+      if (blob.type !== 'application/pdf' || blob.size === 0) {
+        throw new Error('Invalid PDF response from server');
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      setPdfUrl(url);
+      
+      // Trigger download
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'business-plan.pdf';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      
+      toast({
+        title: "Success!",
+        description: "Your business plan has been downloaded.",
+      });
+
+      // Navigate to pricing page
+      setTimeout(() => {
+        navigate('/pricing');
+      }, 1000);
+
+    } catch (error: any) {
+      console.error('Error generating Business Plan:', error);
+      
+      const errorMessage = error?.message ?? 'Request failed or timed out';
+      toast({
+        title: 'Error generating Business Plan',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
@@ -36,53 +94,49 @@ export const PreviewModal = ({ open, onClose, pdfUrl }: PreviewModalProps) => {
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden flex flex-col md:flex-row gap-4 py-4">
-          {pdfUrl ? (
-            <>
-              {/* Page 1 */}
-              <div className="flex-1 border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
-                <iframe
-                  src={`${pdfUrl}#page=1&zoom=page-fit`}
-                  className="w-full h-full"
-                  title="Page 1"
-                />
-              </div>
-
-              {/* Page 2 */}
-              <div className="flex-1 border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
-                <iframe
-                  src={`${pdfUrl}#page=2&zoom=page-fit`}
-                  className="w-full h-full"
-                  title="Page 2"
-                />
-              </div>
-            </>
-          ) : (
-            <div className="flex-1 flex items-center justify-center">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <div className="flex-1 overflow-hidden py-4 flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <div className="w-32 h-32 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
+              <Download className="w-16 h-16 text-primary" />
             </div>
-          )}
+            <h3 className="text-xl font-semibold text-foreground">
+              Your Business Plan is Ready
+            </h3>
+            <p className="text-muted-foreground max-w-md">
+              Click the download button below to generate and download your comprehensive business plan report.
+            </p>
+          </div>
         </div>
 
-        <DialogFooter className="flex flex-col sm:flex-row items-center gap-4 border-t border-gray-200 pt-4">
-          <p className="text-sm text-gray-600 flex-1">
-            Unlock the full report with a Pro subscription
+        <DialogFooter className="flex flex-col sm:flex-row items-center gap-4 border-t border-border pt-4">
+          <p className="text-sm text-muted-foreground flex-1">
+            Generate and download your business plan, then upgrade to Pro for unlimited access
           </p>
           
           <div className="flex gap-2">
             <Button
-              onClick={handleViewOrDownload}
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={handleViewPricing}
+              variant="outline"
             >
-              View Full Report →
+              View Pricing
             </Button>
             
             <Button
-              onClick={handleViewOrDownload}
-              variant="outline"
+              onClick={handleDownload}
+              disabled={isGenerating}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
-              <Download className="w-4 h-4 mr-2" />
-              Download PDF
+              {isGenerating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4 mr-2" />
+                  Download PDF
+                </>
+              )}
             </Button>
           </div>
         </DialogFooter>
