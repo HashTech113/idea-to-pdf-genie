@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Step2BasicInfo } from './steps/Step2BasicInfo';
+import { PreviewModal } from './PreviewModal';
 
 export interface FormData {
   // Step 1
@@ -76,6 +77,8 @@ export const MultiStepBusinessPlanForm = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const { toast } = useToast();
 
   const totalSteps = 1;
@@ -107,25 +110,18 @@ export const MultiStepBusinessPlanForm = () => {
         throw new Error(`Generate failed (${response.status}): ${text || 'No error message'}`);
       }
 
-      // Expect a PDF; stream to blob and download
+      // Expect a PDF; create blob URL for preview
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'business-plan.pdf';
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-
+      setPdfUrl(url);
+      
       toast({
         title: "Success!",
-        description: "Your business plan PDF has been generated and downloaded.",
+        description: "Your business plan preview is ready.",
       });
 
-      // Reset form
-      setFormData(initialFormData);
-      setCurrentStep(1);
+      // Show preview modal instead of downloading
+      setShowPreviewModal(true);
     } catch (error: any) {
       console.error('Error generating Business Plan:', error);
       
@@ -155,13 +151,21 @@ export const MultiStepBusinessPlanForm = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
-      <div className="max-w-2xl mx-auto">
-        {/* Form Card */}
-        <div className="bg-card rounded-2xl p-6 sm:p-8 lg:p-10 border border-border" style={{ boxShadow: 'var(--shadow-large)' }}>
-          {renderStep()}
+    <>
+      <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
+        <div className="max-w-2xl mx-auto">
+          {/* Form Card */}
+          <div className="bg-card rounded-2xl p-6 sm:p-8 lg:p-10 border border-border" style={{ boxShadow: 'var(--shadow-large)' }}>
+            {renderStep()}
+          </div>
         </div>
       </div>
-    </div>
+
+      <PreviewModal 
+        open={showPreviewModal} 
+        onClose={() => setShowPreviewModal(false)}
+        pdfUrl={pdfUrl}
+      />
+    </>
   );
 };

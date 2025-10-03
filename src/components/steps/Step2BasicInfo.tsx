@@ -187,7 +187,7 @@ export const Step2BasicInfo = ({ data, updateData, onNext, onPrev, isLoading }: 
           disabled={isLoading}
           className="w-full h-12 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-primary-foreground disabled:opacity-50"
         >
-          {isLoading ? 'Generating PDF...' : 'Generate Business Plan'}
+          {isLoading ? 'Generating Preview...' : 'View Preview'}
         </Button>
       </div>
     </div>
