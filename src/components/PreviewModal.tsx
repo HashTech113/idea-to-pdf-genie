@@ -1,6 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Loader2, Lock, Download } from "lucide-react";
 
 interface PreviewModalProps {
@@ -10,6 +11,7 @@ interface PreviewModalProps {
 }
 
 export const PreviewModal = ({ open, onClose, pdfUrl }: PreviewModalProps) => {
+  const navigate = useNavigate();
   const [isPaid, setIsPaid] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
 
@@ -21,22 +23,8 @@ export const PreviewModal = ({ open, onClose, pdfUrl }: PreviewModalProps) => {
     }
   }, []);
 
-  const handlePayToUnlock = () => {
-    setIsRedirecting(true);
-    // Replace with your actual checkout URL
-    const checkoutUrl = 'YOUR_CHECKOUT_URL';
-    window.location.href = checkoutUrl;
-  };
-
-  const handleDownload = () => {
-    if (!pdfUrl || !isPaid) return;
-    
-    const link = document.createElement('a');
-    link.href = pdfUrl;
-    link.download = 'business-plan.pdf';
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+  const handleViewOrDownload = () => {
+    navigate('/pricing');
   };
 
   return (
@@ -78,47 +66,23 @@ export const PreviewModal = ({ open, onClose, pdfUrl }: PreviewModalProps) => {
 
         <DialogFooter className="flex flex-col sm:flex-row items-center gap-4 border-t border-gray-200 pt-4">
           <p className="text-sm text-gray-600 flex-1">
-            {isPaid 
-              ? "Payment complete! You can now download the full report." 
-              : "Download is locked until payment is completed."}
+            Unlock the full report with a Pro subscription
           </p>
           
           <div className="flex gap-2">
-            {!isPaid && (
-              <Button
-                onClick={handlePayToUnlock}
-                disabled={isRedirecting}
-                className="bg-indigo-600 text-white hover:bg-indigo-700"
-              >
-                {isRedirecting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Redirecting...
-                  </>
-                ) : (
-                  <>Pay to Unlock</>
-                )}
-              </Button>
-            )}
+            <Button
+              onClick={handleViewOrDownload}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              View Full Report →
+            </Button>
             
             <Button
-              onClick={handleDownload}
-              disabled={!isPaid || !pdfUrl}
-              className={isPaid 
-                ? "bg-indigo-600 text-white hover:bg-indigo-700" 
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"}
+              onClick={handleViewOrDownload}
+              variant="outline"
             >
-              {isPaid ? (
-                <>
-                  <Download className="w-4 h-4 mr-2" />
-                  Download PDF
-                </>
-              ) : (
-                <>
-                  <Lock className="w-4 h-4 mr-2" />
-                  Download PDF (locked)
-                </>
-              )}
+              <Download className="w-4 h-4 mr-2" />
+              Download PDF
             </Button>
           </div>
         </DialogFooter>
