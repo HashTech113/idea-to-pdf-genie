@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
 
 const signUpSchema = z.object({
@@ -58,30 +59,25 @@ const OTPSignUp = () => {
     setIsLoading(true);
     
     try {
-      const response = await fetch('https://tvznnerrgaprchburewu.supabase.co/auth/v1/otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2em5uZXJyZ2FwcmNoYnVyZXd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3OTAxNzUsImV4cCI6MjA3NDM2NjE3NX0._vuf_ZB8i-_GFDz2vIc_6y_6FzjeEkGTOKz90sxiEnY'
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          type: 'signup'
-        })
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`
+        }
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to send OTP');
+      if (error) {
+        throw error;
       }
 
       toast({
         title: "Check your email",
-        description: "We've sent you a verification code to complete your signup.",
+        description: "We've sent you a confirmation link to complete your signup.",
       });
       
-      // Navigate to OTP verification page with email
-      navigate('/verify-otp', { state: { email: formData.email, password: formData.password } });
+      // Navigate to confirmation page
+      navigate('/verify-otp', { state: { email: formData.email } });
     } catch (error: any) {
       toast({
         title: "Sign Up Error",
@@ -141,7 +137,7 @@ const OTPSignUp = () => {
               className="w-full bg-black text-white hover:bg-gray-800" 
               disabled={isLoading}
             >
-              {isLoading ? "Sending OTP..." : "Sign Up"}
+              {isLoading ? "Sending confirmation..." : "Sign Up"}
             </Button>
           </form>
         </CardContent>
