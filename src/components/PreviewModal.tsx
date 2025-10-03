@@ -22,67 +22,8 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
     navigate('/pricing');
   };
 
-  const handleDownload = async () => {
-    setIsGenerating(true);
-
-    try {
-      toast({
-        title: "Generating your business plan...",
-        description: "This may take a few moments.",
-      });
-
-      const response = await fetch('https://tvznnerrgaprchburewu.supabase.co/functions/v1/generate-business-plan', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        const text = await response.text().catch(() => '');
-        throw new Error(`Generate failed (${response.status}): ${text || 'No error message'}`);
-      }
-
-      const blob = await response.blob();
-      
-      if (blob.type !== 'application/pdf' || blob.size === 0) {
-        throw new Error('Invalid PDF response from server');
-      }
-
-      const url = window.URL.createObjectURL(blob);
-      setPdfUrl(url);
-      
-      // Trigger download
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'business-plan.pdf';
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      
-      toast({
-        title: "Success!",
-        description: "Your business plan has been downloaded.",
-      });
-
-      // Navigate to pricing page
-      setTimeout(() => {
-        navigate('/pricing');
-      }, 1000);
-
-    } catch (error: any) {
-      console.error('Error generating Business Plan:', error);
-      
-      const errorMessage = error?.message ?? 'Request failed or timed out';
-      toast({
-        title: 'Error generating Business Plan',
-        description: errorMessage,
-        variant: 'destructive',
-      });
-    } finally {
-      setIsGenerating(false);
-    }
+  const handleDownload = () => {
+    navigate('/pricing');
   };
 
   return (
