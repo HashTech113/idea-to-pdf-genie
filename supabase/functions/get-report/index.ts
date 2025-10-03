@@ -141,24 +141,14 @@ serve(async (req) => {
         }
       }
 
-      // Generate signed URL for preview (10 minutes)
-      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-        .from('business-plans')
-        .createSignedUrl(previewPath, 600);
-
-      if (signedUrlError) {
-        console.error('Failed to create signed URL:', signedUrlError);
-        return new Response(
-          JSON.stringify({ error: 'Failed to generate preview URL' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      console.log('Returning preview URL for free user');
+      // Generate public URL for preview
+      const previewUrl = `${supabaseUrl}/storage/v1/object/public/business-plans/${encodeURIComponent(previewPath)}`;
+      
+      console.log('Returning preview URL for free user:', previewUrl);
       return new Response(
         JSON.stringify({
           type: 'preview',
-          url: signedUrlData.signedUrl,
+          url: previewUrl,
         }),
         {
           status: 200,
@@ -166,26 +156,16 @@ serve(async (req) => {
         }
       );
     } else {
-      // Pro user - return full PDF signed URL
-      console.log('Pro user - generating signed URL for full PDF at:', fullPdfPath);
+      // Pro user - return full PDF public URL
+      console.log('Pro user - generating public URL for full PDF at:', fullPdfPath);
       
-      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-        .from('business-plans')
-        .createSignedUrl(fullPdfPath, 600);
+      const fullPdfUrl = `${supabaseUrl}/storage/v1/object/public/business-plans/${encodeURIComponent(fullPdfPath)}`;
 
-      if (signedUrlError) {
-        console.error('Failed to create signed URL:', signedUrlError);
-        return new Response(
-          JSON.stringify({ error: 'Report not found' }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      console.log('Returning full PDF URL for pro user');
+      console.log('Returning full PDF URL for pro user:', fullPdfUrl);
       return new Response(
         JSON.stringify({
           type: 'full',
-          url: signedUrlData.signedUrl,
+          url: fullPdfUrl,
         }),
         {
           status: 200,
