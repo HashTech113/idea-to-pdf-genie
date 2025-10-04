@@ -43,7 +43,7 @@ serve(async (req) => {
       .from("profiles")
       .select("plan")
       .eq("user_id", user.id)
-      .maybeSingle();
+      .single();
     
     if (profErr) {
       console.error("Profile error:", profErr);

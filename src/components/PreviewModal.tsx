@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -7,7 +7,6 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { PdfEmbed } from "./PdfEmbed";
 import { PdfButtons } from "./PdfButtons";
-import { readJsonSafe, fetchRetry } from "@/lib/utils/http";
 import type { FormData } from "./MultiStepBusinessPlanForm";
 
 interface PreviewModalProps {
@@ -36,36 +35,21 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
         description: "This may take a few moments.",
       });
 
-      // Get auth token
-      const session = await supabase.auth.getSession();
-      const token = session.data.session?.access_token;
-
-      if (!token) {
-        throw new Error("Not authenticated");
-      }
-
-      // Step 1: Generate the PDF with retry logic
-      const generateResponse = await fetchRetry(
-        'https://tvznnerrgaprchburewu.supabase.co/functions/v1/generate-business-plan',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify(formData),
+      // Step 1: Generate the PDF
+      const generateResponse = await fetch('https://tvznnerrgaprchburewu.supabase.co/functions/v1/generate-business-plan', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        3,
-        1500
-      );
+        body: JSON.stringify(formData),
+      });
 
-      const generateResult = await readJsonSafe(generateResponse);
-      
-      if (!generateResult || !generateResult.reportId) {
-        throw new Error("Failed to get report ID from generation");
+      if (!generateResponse.ok) {
+        throw new Error(`Generate failed (${generateResponse.status})`);
       }
 
-      const newReportId = generateResult.reportId;
+      const generateResult = await generateResponse.json();
+      const newReportId = generateResult.reportId || `report-${Date.now()}`;
       setReportId(newReportId);
 
       toast({
@@ -73,24 +57,28 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
         description: "Fetching your report...",
       });
 
-      // Step 2: Get signed URLs from get-report with retry logic
-      const reportResponse = await fetchRetry(
+      // Step 2: Get signed URLs from get-report
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+
+      if (!token) {
+        throw new Error("Not authenticated");
+      }
+
+      const reportResponse = await fetch(
         `https://tvznnerrgaprchburewu.supabase.co/functions/v1/get-report?reportId=${newReportId}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
-        },
-        3,
-        1000
+        }
       );
 
-      const data = await readJsonSafe(reportResponse);
-      
-      if (!data || !data.url) {
-        throw new Error("Failed to get report URLs");
+      if (!reportResponse.ok) {
+        throw new Error(`Failed to get report URLs (${reportResponse.status})`);
       }
 
+      const data = await reportResponse.json();
       setReportData(data);
 
       toast({
@@ -117,18 +105,11 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-[90vw] w-full h-[90vh] flex flex-col bg-background" aria-describedby="dialog-description">
+      <DialogContent className="max-w-[90vw] w-full h-[90vh] flex flex-col bg-background">
         <DialogHeader>
           <DialogTitle className="text-2xl font-poppins">
             {reportData ? (reportData.type === "preview" ? "Preview Report (First 2 Pages)" : "Your Business Plan") : "Generate Business Plan"}
           </DialogTitle>
-          <DialogDescription id="dialog-description">
-            {isGenerating 
-              ? "Generating your business plan. This may take a minute. Keep this tab open." 
-              : reportData 
-                ? "Your business plan is ready to view and download."
-                : "Click the button below to generate your comprehensive business plan."}
-          </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-auto py-4">
