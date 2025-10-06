@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import type { FormData } from "./MultiStepBusinessPlanForm";
 
 interface PreviewModalProps {
@@ -22,8 +23,54 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
     navigate('/pricing');
   };
 
-  const handleDownload = () => {
-    navigate('/pricing');
+  const handleDownload = async () => {
+    try {
+      setIsGenerating(true);
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await supabase.functions.invoke('generate-business-plan', {
+        body: formData,
+        headers: session?.access_token ? {
+          Authorization: `Bearer ${session.access_token}`
+        } : undefined
+      });
+
+      if (response.error) {
+        throw response.error;
+      }
+
+      // Create blob from response data
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create download link and trigger download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'business-plan.pdf';
+      document.body.appendChild(a);
+      a.click();
+      
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Success",
+        description: "Your business plan has been downloaded successfully.",
+      });
+      
+      onClose();
+    } catch (error) {
+      console.error('Error generating business plan:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate business plan. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
