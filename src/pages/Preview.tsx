@@ -29,37 +29,44 @@ export default function Preview() {
           description: "Please log in to view your report.",
           variant: "destructive",
         });
-        navigate('/login');
+        navigate(`/login?next=/preview/${reportId}`);
         return;
       }
 
       // Get user plan
       const { data: profile } = await supabase
         .from('profiles')
-        .select('*')
+        .select('plan')
         .eq('user_id', session.user.id)
         .single();
 
       const plan = (profile as any)?.plan || 'free';
       setUserPlan(plan);
 
-      // Get signed URLs from get-report function
-      const response = await supabase.functions.invoke('get-report', {
-        body: { reportId },
-      });
+      // Call sign-report function with authorization header
+      const response = await fetch(
+        `https://tvznnerrgaprchburewu.supabase.co/functions/v1/sign-report?reportId=${reportId}&exp=300`,
+        {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
-      if (response.error) {
-        if (response.error.message?.includes('preview_not_ready')) {
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (response.status === 409 && errorData.error === 'preview_not_ready') {
           setError('preview_not_ready');
         } else {
-          throw response.error;
+          throw new Error(errorData.error || 'Failed to fetch preview');
         }
         return;
       }
 
-      const { url, downloadUrl: dlUrl } = response.data;
-      setPreviewUrl(url);
-      setDownloadUrl(dlUrl);
+      const data = await response.json();
+      setPreviewUrl(data.previewUrl);
+      setDownloadUrl(data.downloadUrl);
       
     } catch (error: any) {
       console.error('Error fetching preview:', error);
