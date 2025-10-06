@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4'
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://idea-to-pdf-genie.lovable.app',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
@@ -17,9 +17,8 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get reportId from query params
-    const url = new URL(req.url);
-    const reportId = url.searchParams.get('reportId');
+    // Get reportId from request body
+    const { reportId } = await req.json();
 
     if (!reportId) {
       return new Response(
@@ -53,7 +52,7 @@ serve(async (req) => {
       .from('profiles')
       .select('plan')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (profileError) {
       console.error('Error fetching profile:', profileError);
@@ -64,26 +63,91 @@ serve(async (req) => {
     }
 
     const userPlan = profile?.plan || 'free';
-    
-    // Construct public URLs
-    const baseUrl = 'https://tvznnerrgaprchburewu.supabase.co/storage/v1/object/public/business-plans';
-    
+    const expiresIn = 600; // 10 minutes
+
     if (userPlan === 'free') {
-      // Return preview URL (2 pages only)
+      // Check if 2-page preview exists
       const previewPath = `previews/${reportId}-preview2.pdf`;
-      const previewUrl = `${baseUrl}/${encodeURIComponent(previewPath)}`;
       
+      const { data: previewExists } = await supabase.storage
+        .from('business-plans')
+        .list('previews', {
+          search: `${reportId}-preview2.pdf`
+        });
+
+      if (!previewExists || previewExists.length === 0) {
+        // Preview not ready yet
+        return new Response(
+          JSON.stringify({ error: 'preview_not_ready' }),
+          { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Generate signed URL for preview (view only, no download)
+      const { data: signedData, error: signError } = await supabase.storage
+        .from('business-plans')
+        .createSignedUrl(previewPath, expiresIn);
+
+      if (signError || !signedData) {
+        console.error('Error creating signed URL:', signError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to generate preview URL' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       return new Response(
-        JSON.stringify({ type: 'preview', url: previewUrl }),
+        JSON.stringify({ 
+          type: 'preview', 
+          url: signedData.signedUrl,
+          downloadUrl: null
+        }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     } else {
-      // Return full PDF URL
+      // Pro user - return full PDF
       const fullPath = `private/${user.id}/${reportId}.pdf`;
-      const fullUrl = `${baseUrl}/${encodeURIComponent(fullPath)}`;
-      
+
+      // Check if full PDF exists
+      const { data: fullExists } = await supabase.storage
+        .from('business-plans')
+        .list(`private/${user.id}`, {
+          search: `${reportId}.pdf`
+        });
+
+      if (!fullExists || fullExists.length === 0) {
+        return new Response(
+          JSON.stringify({ error: 'Report not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Generate signed URL for viewing (no download)
+      const { data: viewData, error: viewError } = await supabase.storage
+        .from('business-plans')
+        .createSignedUrl(fullPath, expiresIn);
+
+      // Generate signed URL for downloading
+      const { data: downloadData, error: downloadError } = await supabase.storage
+        .from('business-plans')
+        .createSignedUrl(fullPath, expiresIn, {
+          download: true
+        });
+
+      if (viewError || !viewData) {
+        console.error('Error creating view URL:', viewError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to generate preview URL' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       return new Response(
-        JSON.stringify({ type: 'full', url: fullUrl }),
+        JSON.stringify({ 
+          type: 'full', 
+          url: viewData.signedUrl,
+          downloadUrl: downloadData?.signedUrl || null
+        }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

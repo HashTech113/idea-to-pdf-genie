@@ -1,8 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Download } from "lucide-react";
+import { Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { FormData } from "./MultiStepBusinessPlanForm";
@@ -16,60 +15,42 @@ interface PreviewModalProps {
 export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
   const handleViewPricing = () => {
     navigate('/pricing');
   };
 
-  const handleDownload = async () => {
+  const handleContinue = async () => {
     try {
-      setIsGenerating(true);
-      
       const { data: { session } } = await supabase.auth.getSession();
       
-      const response = await supabase.functions.invoke('generate-business-plan', {
-        body: formData,
-        headers: session?.access_token ? {
-          Authorization: `Bearer ${session.access_token}`
-        } : undefined
-      });
-
-      if (response.error) {
-        throw response.error;
+      if (!session) {
+        toast({
+          title: "Authentication required",
+          description: "Please log in to continue.",
+          variant: "destructive",
+        });
+        navigate('/login');
+        return;
       }
 
-      // Create blob from response data
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
+      // Generate a unique reportId
+      const reportId = crypto.randomUUID();
       
-      // Create download link and trigger download
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'business-plan.pdf';
-      document.body.appendChild(a);
-      a.click();
+      // Store form data in sessionStorage for the Generating page
+      sessionStorage.setItem(`formData_${reportId}`, JSON.stringify(formData));
       
-      // Cleanup
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
-      toast({
-        title: "Success",
-        description: "Your business plan has been downloaded successfully.",
-      });
-      
+      // Navigate to generating page
+      navigate(`/generating/${reportId}`);
       onClose();
+      
     } catch (error) {
-      console.error('Error generating business plan:', error);
+      console.error('Error navigating to generating page:', error);
       toast({
         title: "Error",
-        description: "Failed to generate business plan. Please try again.",
+        description: "Failed to proceed. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsGenerating(false);
     }
   };
 
@@ -110,21 +91,10 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
             </Button>
             
             <Button
-              onClick={handleDownload}
-              disabled={isGenerating}
+              onClick={handleContinue}
               className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Download className="w-4 h-4 mr-2" />
-                  Download PDF
-                </>
-              )}
+              Continue
             </Button>
           </div>
         </DialogFooter>
