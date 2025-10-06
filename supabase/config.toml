@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.get-report]
 verify_jwt = false
+
+[functions.sign-report]
+verify_jwt = false

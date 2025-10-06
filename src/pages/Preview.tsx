@@ -43,9 +43,9 @@ export default function Preview() {
       const plan = (profile as any)?.plan || 'free';
       setUserPlan(plan);
 
-      // Get signed URLs from get-report function
-      const response = await supabase.functions.invoke('get-report', {
-        body: { reportId },
+      // Get signed URLs from sign-report function
+      const response = await supabase.functions.invoke('sign-report', {
+        body: { reportId, exp: 300 },
       });
 
       if (response.error) {
@@ -57,8 +57,8 @@ export default function Preview() {
         return;
       }
 
-      const { url, downloadUrl: dlUrl } = response.data;
-      setPreviewUrl(url);
+      const { previewUrl, downloadUrl: dlUrl } = response.data;
+      setPreviewUrl(previewUrl);
       setDownloadUrl(dlUrl);
       
     } catch (error: any) {
