@@ -51,53 +51,25 @@ serve(async (req) => {
     
     console.log('Starting PDF generation for user:', userId, 'reportId:', reportId);
 
-    // Call n8n webhook to generate PDF
-    const n8nResponse = await fetch('https://hashirceo.app.n8n.cloud/webhook/2fcbe92b-1cd7-4ac9-987f-34dbaa1dc93f', {
+    // Trigger n8n webhook to generate PDF asynchronously (don't wait for response)
+    // n8n will take longer than edge function timeout, so we trigger and let it work in background
+    fetch('https://hashirceo.app.n8n.cloud/webhook/2fcbe92b-1cd7-4ac9-987f-34dbaa1dc93f', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ userId, reportId, ...formData }),
+      body: JSON.stringify({ 
+        userId, 
+        reportId, 
+        formData,
+        supabaseUrl: supabaseUrl,
+        supabaseKey: supabaseKey 
+      }),
+    }).catch(error => {
+      console.error('Error triggering n8n webhook:', error);
     });
 
-    if (!n8nResponse.ok) {
-      console.error('n8n webhook error:', n8nResponse.status, n8nResponse.statusText);
-      return new Response(
-        JSON.stringify({ error: 'Failed to generate Business Plan' }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
-    }
-
-    // Get the PDF blob from n8n response
-    const pdfBlob = await n8nResponse.blob();
-    const pdfBuffer = await pdfBlob.arrayBuffer();
-
-    console.log('PDF generated, size:', pdfBuffer.byteLength);
-
-    // Upload full PDF to Supabase Storage
-    const fullPdfPath = `private/${userId}/${reportId}.pdf`;
-    const { error: uploadError } = await supabase.storage
-      .from('business-plans')
-      .upload(fullPdfPath, pdfBuffer, {
-        contentType: 'application/pdf',
-        upsert: true,
-      });
-
-    if (uploadError) {
-      console.error('Error uploading PDF to storage:', uploadError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to store PDF' }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
-    }
-
-    console.log('PDF stored successfully at:', fullPdfPath);
+    console.log('PDF generation triggered for reportId:', reportId);
 
     return new Response(
       JSON.stringify({ 
