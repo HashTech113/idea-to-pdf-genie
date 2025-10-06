@@ -28,7 +28,11 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<OTPSignUp />} />
             <Route path="/" element={<Index />} />
-            <Route path="/business-plan" element={<BusinessPlan />} />
+            <Route path="/business-plan" element={
+              <ProtectedRoute>
+                <BusinessPlan />
+              </ProtectedRoute>
+            } />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/generating/:reportId" element={<Generating />} />
             <Route path="/preview/:reportId" element={<Preview />} />

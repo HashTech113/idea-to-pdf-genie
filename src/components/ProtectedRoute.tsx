@@ -12,7 +12,9 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   useEffect(() => {
     if (!loading && !user) {
-      navigate('/login');
+      // Redirect to login with return URL
+      const currentPath = window.location.pathname;
+      navigate(`/login?redirect=${encodeURIComponent(currentPath)}`);
     }
   }, [user, loading, navigate]);
 

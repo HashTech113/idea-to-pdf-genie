@@ -25,7 +25,7 @@ const SignUp = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
   
-  const { signUp } = useAuth();
+  const { signUp, signIn } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -79,12 +79,24 @@ const SignUp = () => {
         return;
       }
 
+      // Auto-login after successful signup
+      const { error: signInError } = await signIn(formData.email, formData.password);
+      
+      if (signInError) {
+        toast({
+          title: "Account Created!",
+          description: "Please log in to continue.",
+        });
+        navigate('/login');
+        return;
+      }
+
       toast({
-        title: "Account Created!",
-        description: "Please check your email for verification instructions.",
+        title: "Welcome!",
+        description: "Your account has been created successfully.",
       });
       
-      navigate('/login');
+      navigate('/business-plan');
     } catch (error: any) {
       toast({
         title: "Sign Up Error",

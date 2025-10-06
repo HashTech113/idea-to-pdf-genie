@@ -83,12 +83,8 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
-        toast({
-          title: "Authentication required",
-          description: "Please log in to continue.",
-          variant: "destructive",
-        });
-        navigate('/login');
+        setError("Authentication required. Please log in to generate your business plan.");
+        setIsGenerating(false);
         return;
       }
 

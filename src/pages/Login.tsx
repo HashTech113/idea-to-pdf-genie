@@ -24,6 +24,10 @@ const Login = () => {
   
   const { toast } = useToast();
   const navigate = useNavigate();
+  
+  // Get redirect parameter from URL
+  const searchParams = new URLSearchParams(window.location.search);
+  const redirectTo = searchParams.get('redirect') || '/business-plan';
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -107,7 +111,7 @@ const Login = () => {
           description: "You have successfully logged in.",
         });
         
-        navigate('/business-plan');
+        navigate(redirectTo);
       }
     } catch (error: any) {
       toast({
