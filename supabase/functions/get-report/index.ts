@@ -17,8 +17,9 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get reportId from request body
-    const { reportId } = await req.json();
+    // Get reportId from query params
+    const url = new URL(req.url);
+    const reportId = url.searchParams.get('reportId');
 
     if (!reportId) {
       return new Response(
@@ -64,105 +65,25 @@ serve(async (req) => {
 
     const userPlan = profile?.plan || 'free';
     
+    // Construct public URLs
+    const baseUrl = 'https://tvznnerrgaprchburewu.supabase.co/storage/v1/object/public/business-plans';
+    
     if (userPlan === 'free') {
-      // Generate preview (2 pages only)
+      // Return preview URL (2 pages only)
       const previewPath = `previews/${reportId}-preview2.pdf`;
+      const previewUrl = `${baseUrl}/${encodeURIComponent(previewPath)}`;
       
-      // Check if preview already exists
-      const { data: existingPreview } = await supabase.storage
-        .from('business-plans')
-        .list('previews', {
-          search: `${reportId}-preview2.pdf`
-        });
-
-      if (!existingPreview || existingPreview.length === 0) {
-        // Generate preview from full PDF
-        const fullPath = `private/${user.id}/${reportId}.pdf`;
-        const { data: fullPdfData, error: downloadError } = await supabase.storage
-          .from('business-plans')
-          .download(fullPath);
-
-        if (downloadError) {
-          console.error('Error downloading full PDF:', downloadError);
-          return new Response(
-            JSON.stringify({ error: 'Failed to access business plan' }),
-            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-
-        // Use pdf-lib to extract first 2 pages
-        const { PDFDocument } = await import('https://cdn.skypack.dev/pdf-lib@1.17.1');
-        const pdfBytes = await fullPdfData.arrayBuffer();
-        const pdfDoc = await PDFDocument.load(pdfBytes);
-        const previewDoc = await PDFDocument.create();
-        
-        const pagesToCopy = Math.min(2, pdfDoc.getPageCount());
-        const copiedPages = await previewDoc.copyPages(pdfDoc, Array.from({ length: pagesToCopy }, (_, i) => i));
-        copiedPages.forEach(page => previewDoc.addPage(page));
-
-        const previewBytes = await previewDoc.save();
-
-        // Upload preview
-        const { error: uploadError } = await supabase.storage
-          .from('business-plans')
-          .upload(previewPath, previewBytes, {
-            contentType: 'application/pdf',
-            upsert: true
-          });
-
-        if (uploadError) {
-          console.error('Error uploading preview:', uploadError);
-        }
-      }
-
-      // Generate signed URL for preview
-      const { data: previewUrlData, error: previewUrlError } = await supabase.storage
-        .from('business-plans')
-        .createSignedUrl(previewPath, 600); // 10 minutes
-
-      if (previewUrlError) {
-        console.error('Error creating preview signed URL:', previewUrlError);
-        return new Response(
-          JSON.stringify({ error: 'Failed to generate preview URL' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
       return new Response(
-        JSON.stringify({ 
-          type: 'preview', 
-          url: previewUrlData.signedUrl,
-          downloadUrl: null
-        }),
+        JSON.stringify({ type: 'preview', url: previewUrl }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     } else {
-      // Return signed URL for full PDF
+      // Return full PDF URL
       const fullPath = `private/${user.id}/${reportId}.pdf`;
+      const fullUrl = `${baseUrl}/${encodeURIComponent(fullPath)}`;
       
-      const { data: urlData, error: urlError } = await supabase.storage
-        .from('business-plans')
-        .createSignedUrl(fullPath, 600); // 10 minutes
-
-      if (urlError) {
-        console.error('Error creating signed URL:', urlError);
-        return new Response(
-          JSON.stringify({ error: 'Failed to generate download URL' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      // Also create a download URL with proper headers
-      const { data: downloadUrlData } = await supabase.storage
-        .from('business-plans')
-        .createSignedUrl(fullPath, 600);
-
       return new Response(
-        JSON.stringify({ 
-          type: 'full', 
-          url: urlData.signedUrl,
-          downloadUrl: downloadUrlData?.signedUrl || urlData.signedUrl
-        }),
+        JSON.stringify({ type: 'full', url: fullUrl }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

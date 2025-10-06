@@ -1,7 +1,10 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Download } from "lucide-react";
+import { Loader2, Download } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import type { FormData } from "./MultiStepBusinessPlanForm";
 
 interface PreviewModalProps {
@@ -12,14 +15,62 @@ interface PreviewModalProps {
 
 export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
   const handleViewPricing = () => {
     navigate('/pricing');
   };
 
-  const handleViewPreview = () => {
-    navigate('/preview-report', { state: { formData } });
-    onClose();
+  const handleDownload = async () => {
+    try {
+      setIsGenerating(true);
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await supabase.functions.invoke('generate-business-plan', {
+        body: formData,
+        headers: session?.access_token ? {
+          Authorization: `Bearer ${session.access_token}`
+        } : undefined
+      });
+
+      if (response.error) {
+        throw response.error;
+      }
+
+      // Create blob from response data
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create download link and trigger download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'business-plan.pdf';
+      document.body.appendChild(a);
+      a.click();
+      
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Success",
+        description: "Your business plan has been downloaded successfully.",
+      });
+      
+      onClose();
+    } catch (error) {
+      console.error('Error generating business plan:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate business plan. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
@@ -59,11 +110,21 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
             </Button>
             
             <Button
-              onClick={handleViewPreview}
+              onClick={handleDownload}
+              disabled={isGenerating}
               className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
-              <Download className="w-4 h-4 mr-2" />
-              View Preview
+              {isGenerating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4 mr-2" />
+                  Download PDF
+                </>
+              )}
             </Button>
           </div>
         </DialogFooter>
