@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Download } from "lucide-react";
@@ -61,6 +61,9 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
           <DialogTitle className="text-2xl font-poppins text-gray-900">
             Preview report (first 2 pages)
           </DialogTitle>
+          <DialogDescription>
+            Generate and download your comprehensive business plan report.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden py-4 flex items-center justify-center">
