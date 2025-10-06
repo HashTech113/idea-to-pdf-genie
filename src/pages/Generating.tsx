@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { startPdfJob } from "@/api/startPdf";
 
 export default function Generating() {
   const { reportId } = useParams<{ reportId: string }>();
@@ -41,21 +40,27 @@ export default function Generating() {
 
       const formData = JSON.parse(formDataStr);
 
-      // Trigger n8n to generate PDF using the API helper
-      const result = await startPdfJob(reportId, formData);
-      
-      if (!result.ok) {
-        throw new Error(result.code || 'Failed to start PDF generation');
+      // Trigger n8n to generate PDF
+      const response = await supabase.functions.invoke('generate-business-plan', {
+        body: {
+          ...formData,
+          userId: session.user.id,
+          reportId,
+        },
+      });
+
+      if (response.error) {
+        throw response.error;
       }
 
       // Navigate to preview page
       navigate(`/preview/${reportId}`);
       
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error starting PDF generation:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to start PDF generation. Please try again.",
+        description: "Failed to start PDF generation. Please try again.",
         variant: "destructive",
       });
     } finally {

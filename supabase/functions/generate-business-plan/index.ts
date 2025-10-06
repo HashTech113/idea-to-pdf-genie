@@ -1,122 +1,124 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4'
 
-const ALLOW = ["https://idea-to-pdf-genie.lovable.app", "http://localhost:5173"];
-
-function cors(req: Request, extra: HeadersInit = {}) {
-  const origin = req.headers.get("origin") ?? "";
-  const host = origin ? new URL(origin).host : "";
-  const allow = ALLOW.includes(origin) || /\.lovableproject\.com$/.test(host) ? origin : ALLOW[0];
-  return {
-    "Access-Control-Allow-Origin": allow,
-    "Access-Control-Allow-Methods": "POST,OPTIONS",
-    "Access-Control-Allow-Headers": "authorization, apikey, x-client-info, content-type",
-    ...extra,
-  };
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: cors(req) });
-  if (req.method !== "POST") return json(req, { ok: false, code: "method_not_allowed" }, 405);
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  if (req.method !== 'POST') {
+    return new Response(
+      JSON.stringify({ error: 'Method not allowed' }),
+      { 
+        status: 405, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
+  }
 
   try {
-    // env checks (avoid crashing)
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
-    const N8N_WEBHOOK_URL = Deno.env.get("N8N_WEBHOOK_URL");
-    
-    if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !N8N_WEBHOOK_URL) {
-      console.error("Missing environment variables:", { 
-        hasUrl: !!SUPABASE_URL, 
-        hasKey: !!SUPABASE_ANON_KEY, 
-        hasWebhook: !!N8N_WEBHOOK_URL 
-      });
-      return json(req, { ok: false, code: "env_missing" }, 500);
+    // Get auth header and verify user
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Authorization required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // auth from JWT
-    const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } },
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const jwt = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabase.auth.getUser(jwt);
+
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const requestBody = await req.json();
+    const { userId, reportId, ...formData } = requestBody;
+    
+    console.log('Starting PDF generation for user:', userId, 'reportId:', reportId);
+
+    // Call n8n webhook to generate PDF
+    const n8nResponse = await fetch('https://hashirceo.app.n8n.cloud/webhook/2fcbe92b-1cd7-4ac9-987f-34dbaa1dc93f', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId, reportId, ...formData }),
     });
-    
-    const { data: { user } } = await sb.auth.getUser();
-    if (!user) {
-      console.error("Authentication failed: no user found");
-      return json(req, { ok: false, code: "unauthorized" }, 401);
+
+    if (!n8nResponse.ok) {
+      console.error('n8n webhook error:', n8nResponse.status, n8nResponse.statusText);
+      return new Response(
+        JSON.stringify({ error: 'Failed to generate Business Plan' }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
-    console.log("Authenticated user:", user.id);
+    // Get the PDF blob from n8n response
+    const pdfBlob = await n8nResponse.blob();
+    const pdfBuffer = await pdfBlob.arrayBuffer();
 
-    // parse body
-    let body: any;
-    try { 
-      body = await req.json(); 
-    } catch (e) { 
-      console.error("Failed to parse JSON body:", e);
-      return json(req, { ok: false, code: "bad_json" }, 400); 
-    }
-    
-    const { reportId, formData } = body || {};
-    if (!reportId) {
-      console.error("Missing reportId in request body");
-      return json(req, { ok: false, code: "missing_reportId" }, 400);
-    }
+    console.log('PDF generated, size:', pdfBuffer.byteLength);
 
-    console.log("Starting PDF generation for user:", user.id, "reportId:", reportId);
-
-    // call n8n with timeout (don't hang & crash)
-    const controller = new AbortController();
-    const t = setTimeout(() => controller.abort(), 28000);
-    
-    let n8n;
-    try {
-      n8n = await fetch(N8N_WEBHOOK_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id, reportId, formData }),
-        signal: controller.signal,
+    // Upload full PDF to Supabase Storage
+    const fullPdfPath = `private/${userId}/${reportId}.pdf`;
+    const { error: uploadError } = await supabase.storage
+      .from('business-plans')
+      .upload(fullPdfPath, pdfBuffer, {
+        contentType: 'application/pdf',
+        upsert: true,
       });
-    } catch (e) {
-      clearTimeout(t);
-      console.error("n8n fetch error:", e);
-      return json(req, { ok: false, code: "n8n_timeout", error: String(e) }, 502);
-    } finally {
-      clearTimeout(t);
+
+    if (uploadError) {
+      console.error('Error uploading PDF to storage:', uploadError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to store PDF' }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
-    const text = await n8n.text();
-    console.log("n8n response status:", n8n.status, "body:", text.substring(0, 200));
-    
-    if (!n8n.ok) {
-      console.error("n8n webhook error:", n8n.status, text);
-      return json(req, { 
-        ok: false, 
-        code: "n8n_error", 
-        status: n8n.status, 
-        details: safeJson(text) 
-      }, 502);
-    }
+    console.log('PDF stored successfully at:', fullPdfPath);
 
-    console.log("PDF generation job started successfully");
-    return json(req, { ok: true, started: true, n8n: safeJson(text) }, 202);
-    
-  } catch (e) {
-    console.error("Unhandled error in generate-business-plan function:", e);
-    return json(req, { ok: false, code: "unhandled", error: String(e?.message ?? e) }, 500);
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        reportId,
+        message: 'Business plan generated and stored successfully'
+      }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
+
+  } catch (error) {
+    console.error('Error in generate-business-plan function:', error);
+    return new Response(
+      JSON.stringify({ error: 'Internal server error' }),
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
   }
-});
-
-function json(req: Request, body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), { 
-    status, 
-    headers: cors(req, { "Content-Type": "application/json" }) 
-  });
-}
-
-function safeJson(s: string) { 
-  try { 
-    return JSON.parse(s); 
-  } catch { 
-    return { raw: s }; 
-  } 
-}
+})
