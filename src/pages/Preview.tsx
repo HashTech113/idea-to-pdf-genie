@@ -17,7 +17,7 @@ export default function Preview() {
   const [userPlan, setUserPlan] = useState<string>('free');
   const [retryCount, setRetryCount] = useState(0);
 
-  const fetchPreview = async () => {
+  const fetchPreview = async (signal?: AbortSignal) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -51,6 +51,7 @@ export default function Preview() {
             'Authorization': `Bearer ${session.access_token}`,
             'Content-Type': 'application/json',
           },
+          signal, // Add abort signal
         }
       );
 
@@ -69,6 +70,12 @@ export default function Preview() {
       setDownloadUrl(data.downloadUrl);
       
     } catch (error: any) {
+      // Ignore abort errors (happens when component unmounts or user navigates away)
+      if (error.name === 'AbortError') {
+        console.log('Fetch aborted');
+        return;
+      }
+      
       console.error('Error fetching preview:', error);
       setError(error.message || 'Failed to load preview');
       toast({
@@ -82,9 +89,15 @@ export default function Preview() {
   };
 
   useEffect(() => {
-    if (reportId) {
-      fetchPreview();
-    }
+    if (!reportId) return;
+
+    const abortController = new AbortController();
+    fetchPreview(abortController.signal);
+
+    // Cleanup: abort fetch when component unmounts or dependencies change
+    return () => {
+      abortController.abort();
+    };
   }, [reportId, retryCount]);
 
   const handleDownload = () => {
