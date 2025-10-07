@@ -51,23 +51,69 @@ serve(async (req) => {
     
     console.log('Starting PDF generation for user:', userId, 'reportId:', reportId);
 
-    // Trigger n8n webhook to generate PDF asynchronously (don't wait for response)
-    // n8n will take longer than edge function timeout, so we trigger and let it work in background
-    fetch('https://hashirceo.app.n8n.cloud/webhook/2fcbe92b-1cd7-4ac9-987f-34dbaa1dc93f', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ 
-        userId, 
-        reportId, 
-        formData,
-        supabaseUrl: supabaseUrl,
-        supabaseKey: supabaseKey 
-      }),
-    }).catch(error => {
-      console.error('Error triggering n8n webhook:', error);
-    });
+    // Update job status to 'processing'
+    const { error: updateError } = await supabase
+      .from('jobs')
+      .update({ status: 'processing' })
+      .eq('report_id', reportId);
+
+    if (updateError) {
+      console.error('Error updating job status:', updateError);
+    }
+
+    // Trigger n8n webhook as a background task
+    const webhookTask = async () => {
+      try {
+        const n8nUrl = 'https://hashirceo.app.n8n.cloud/webhook/2fcbe92b-1cd7-4ac9-987f-34dbaa1dc93f';
+        
+        console.log('Calling n8n webhook for reportId:', reportId);
+        
+        const response = await fetch(n8nUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            userId, 
+            reportId, 
+            formData,
+            supabaseUrl: supabaseUrl,
+            supabaseKey: supabaseKey 
+          }),
+          signal: AbortSignal.timeout(30000), // 30 second timeout
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('n8n webhook failed:', response.status, errorText);
+          
+          // Update job status to failed
+          await supabase
+            .from('jobs')
+            .update({ 
+              status: 'failed',
+              error_message: `Webhook failed: ${response.status} ${errorText}`
+            })
+            .eq('report_id', reportId);
+        } else {
+          console.log('n8n webhook succeeded for reportId:', reportId);
+        }
+      } catch (error) {
+        console.error('Error calling n8n webhook:', error);
+        
+        // Update job status to failed
+        await supabase
+          .from('jobs')
+          .update({ 
+            status: 'failed',
+            error_message: error.message || 'Webhook call failed'
+          })
+          .eq('report_id', reportId);
+      }
+    };
+
+    // Use EdgeRuntime.waitUntil to keep the function alive for the background task
+    EdgeRuntime.waitUntil(webhookTask());
 
     console.log('PDF generation triggered for reportId:', reportId);
 

@@ -28,12 +28,15 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
     navigate('/pricing');
   };
 
-  const pollForPreview = async (id: string) => {
-    const maxAttempts = 60; // Poll for up to 60 attempts (5 minutes with 5-second intervals)
+  const pollForPreview = async (id: string, startTime: number = Date.now()) => {
+    const maxPollingTime = 180000; // 3 minutes
     
     const poll = async (attempt: number) => {
-      if (attempt >= maxAttempts) {
-        setError('PDF generation is taking longer than expected. Please try again.');
+      const elapsedTime = Date.now() - startTime;
+      
+      // Check if we've exceeded max polling time
+      if (elapsedTime > maxPollingTime) {
+        setError('PDF generation is taking longer than expected. Please check back in a few minutes or contact support.');
         setIsGenerating(false);
         return;
       }
@@ -46,6 +49,19 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
         
         if (!currentSession) {
           setError('Session expired. Please log in again.');
+          setIsGenerating(false);
+          return;
+        }
+
+        // Check job status in database
+        const { data: jobData } = await (supabase as any)
+          .from('jobs')
+          .select('status, error_message')
+          .eq('report_id', id)
+          .maybeSingle();
+
+        if ((jobData as any)?.status === 'failed') {
+          setError(`PDF generation failed: ${(jobData as any)?.error_message || 'Unknown error'}`);
           setIsGenerating(false);
           return;
         }
@@ -68,8 +84,10 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
         }
 
         if (response.status === 409) {
-          // Preview not ready yet, poll again after 5 seconds
-          setTimeout(() => poll(attempt + 1), 5000);
+          // Preview not ready yet, use exponential backoff
+          // 3s, 5s, 8s, 12s, 18s, then 20s max
+          const delay = Math.min(3000 * Math.pow(1.5, attempt), 20000);
+          setTimeout(() => poll(attempt + 1), delay);
         } else {
           const errorData = await response.json();
           throw new Error(errorData.error || 'Failed to fetch preview');
@@ -103,6 +121,21 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
       // Generate a unique reportId
       const id = crypto.randomUUID();
       setReportId(id);
+
+      // Create job record first
+      const { error: jobError } = await (supabase as any)
+        .from('jobs')
+        .insert({
+          report_id: id,
+          user_id: currentSession.user.id,
+          status: 'queued',
+          form_data: formData
+        });
+
+      if (jobError) {
+        console.error('Job creation error:', jobError);
+        throw new Error('Failed to create job record. Please try again.');
+      }
       
       // Trigger PDF generation with explicit authorization
       const { data, error: generateError } = await supabase.functions.invoke('generate-business-plan', {
@@ -120,8 +153,8 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
         throw new Error(generateError.message || 'Failed to start PDF generation');
       }
 
-      // Start polling for the preview
-      pollForPreview(id);
+      // Start polling for the preview after 3 seconds with start time
+      setTimeout(() => pollForPreview(id, Date.now()), 3000);
       
     } catch (error: any) {
       console.error('Error generating PDF:', error);
@@ -171,11 +204,11 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
                 Generating your PDF...
               </h3>
               <p className="text-muted-foreground max-w-md">
-                Please wait while we create your business plan preview. This usually takes a few moments.
+                This may take up to 3 minutes. Please don't close this window.
               </p>
-              {pollingAttempts > 10 && (
-                <p className="text-sm text-muted-foreground">
-                  Still generating... ({pollingAttempts * 5} seconds elapsed)
+              {pollingAttempts > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Checking status... (attempt {pollingAttempts})
                 </p>
               )}
             </div>
