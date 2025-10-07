@@ -91,8 +91,11 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
       setPreviewUrl(null);
       setPollingAttempts(0);
       
-      if (!session) {
-        setError("Authentication required. Please log in to generate your business plan.");
+      // Get fresh session to ensure valid token
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      
+      if (!currentSession) {
+        setError("Session expired. Please log in again.");
         setIsGenerating(false);
         return;
       }
@@ -101,10 +104,13 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
       const id = crypto.randomUUID();
       setReportId(id);
       
-      // Trigger PDF generation
+      // Trigger PDF generation with explicit authorization
       const { data, error: generateError } = await supabase.functions.invoke('generate-business-plan', {
+        headers: {
+          Authorization: `Bearer ${currentSession.access_token}`,
+        },
         body: {
-          userId: session.user.id,
+          userId: currentSession.user.id,
           reportId: id,
           formData: formData,
         },
