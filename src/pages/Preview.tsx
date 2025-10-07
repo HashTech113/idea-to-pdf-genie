@@ -162,16 +162,11 @@ export default function Preview() {
             <h1 className="text-3xl font-bold text-foreground mb-4">
               Business Plan Preview {userPlan === 'free' && '(First 2 Pages)'}
             </h1>
-            <object
-              data={previewUrl}
-              type="application/pdf"
+            <iframe
+              src={previewUrl}
               className="w-full h-[80vh] border-0 rounded-lg shadow-lg"
-              aria-label="Business Plan Preview"
-            >
-              <p className="text-center text-muted-foreground p-4">
-                Unable to display PDF. <a href={previewUrl} className="text-primary underline" target="_blank" rel="noopener noreferrer">Download PDF</a>
-              </p>
-            </object>
+              title="Business Plan Preview"
+            />
           </div>
         )}
       </div>
