@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Download, Loader2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import type { FormData } from "./MultiStepBusinessPlanForm";
 
 interface PreviewModalProps {
@@ -16,6 +17,7 @@ interface PreviewModalProps {
 export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { session } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [reportId, setReportId] = useState<string | null>(null);
@@ -79,8 +81,6 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
       setError(null);
       setPreviewUrl(null);
       setPollingAttempts(0);
-
-      const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
         setError("Authentication required. Please log in to generate your business plan.");
