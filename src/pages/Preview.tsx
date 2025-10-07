@@ -65,6 +65,12 @@ export default function Preview() {
       }
 
       const data = await response.json();
+      
+      // Safety check: ensure previewUrl is absolute HTTPS URL from Supabase
+      if (data.previewUrl && !data.previewUrl.startsWith('https://')) {
+        throw new Error('Invalid preview URL received');
+      }
+      
       setPreviewUrl(data.previewUrl);
       setDownloadUrl(data.downloadUrl);
       
@@ -163,9 +169,11 @@ export default function Preview() {
               Business Plan Preview {userPlan === 'free' && '(First 2 Pages)'}
             </h1>
             <iframe
-              src={previewUrl}
-              className="w-full h-[80vh] border-0 rounded-lg shadow-lg"
               title="Business Plan Preview"
+              src={previewUrl}
+              className="w-full h-[80vh] border-0"
+              loading="lazy"
+              referrerPolicy="no-referrer"
             />
           </div>
         )}
