@@ -28,7 +28,7 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
     navigate('/pricing');
   };
 
-  const pollForPreview = async (id: string, session: any) => {
+  const pollForPreview = async (id: string) => {
     const maxAttempts = 60; // Poll for up to 60 attempts (5 minutes with 5-second intervals)
     
     const poll = async (attempt: number) => {
@@ -41,11 +41,20 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
       setPollingAttempts(attempt);
 
       try {
+        // Get fresh session each time to avoid token expiration
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        
+        if (!currentSession) {
+          setError('Session expired. Please log in again.');
+          setIsGenerating(false);
+          return;
+        }
+
         const response = await fetch(
           `https://tvznnerrgaprchburewu.supabase.co/functions/v1/sign-report?reportId=${id}&exp=300`,
           {
             headers: {
-              'Authorization': `Bearer ${session.access_token}`,
+              'Authorization': `Bearer ${currentSession.access_token}`,
               'Content-Type': 'application/json',
             },
           }
@@ -106,7 +115,7 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
       }
 
       // Start polling for the preview
-      pollForPreview(id, session);
+      pollForPreview(id);
       
     } catch (error: any) {
       console.error('Error generating PDF:', error);
