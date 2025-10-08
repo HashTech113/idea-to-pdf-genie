@@ -107,12 +107,13 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
       setPreviewUrl(null);
       setPollingAttempts(0);
       
-      // Get fresh session to ensure valid token
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      // Refresh session to ensure valid token
+      const { data: { session: currentSession }, error: sessionError } = await supabase.auth.refreshSession();
       
-      if (!currentSession) {
+      if (sessionError || !currentSession) {
         setError("Session expired. Please log in again.");
         setIsGenerating(false);
+        navigate('/login');
         return;
       }
 
