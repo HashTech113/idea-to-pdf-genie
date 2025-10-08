@@ -70,31 +70,25 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
           }
         }
 
-        const response = await fetch(
-          `https://tvznnerrgaprchburewu.supabase.co/functions/v1/sign-report?reportId=${id}&exp=300`,
-          {
-            headers: {
-              'Authorization': `Bearer ${currentSession.access_token}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
+        // Construct public storage URL
+        const previewUrl = `https://tvznnerrgaprchburewu.supabase.co/storage/v1/object/public/business-plans/previews/${id}-preview2.pdf`;
+        
+        // Check if the preview file exists
+        const response = await fetch(previewUrl, { method: 'HEAD' });
 
         if (response.ok) {
-          const data = await response.json();
-          setPreviewUrl(data.previewUrl);
+          setPreviewUrl(previewUrl);
           setIsGenerating(false);
           return;
         }
 
-        if (response.status === 409) {
+        if (response.status === 404) {
           // Preview not ready yet, use exponential backoff
           // 3s, 5s, 8s, 12s, 18s, then 20s max
           const delay = Math.min(3000 * Math.pow(1.5, attempt), 20000);
           setTimeout(() => poll(attempt + 1), delay);
         } else {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to fetch preview');
+          throw new Error('Failed to fetch preview');
         }
       } catch (err: any) {
         console.error('Error polling for preview:', err);
