@@ -14,31 +14,88 @@ export type Database = {
   }
   public: {
     Tables: {
-      profiles: {
+      "details of subscribed users": {
+        Row: {
+          "business idea": string | null
+          created_at: string
+          id: number
+          path: string | null
+          uid: string | null
+        }
+        Insert: {
+          "business idea"?: string | null
+          created_at?: string
+          id?: number
+          path?: string | null
+          uid?: string | null
+        }
+        Update: {
+          "business idea"?: string | null
+          created_at?: string
+          id?: number
+          path?: string | null
+          uid?: string | null
+        }
+        Relationships: []
+      }
+      jobs: {
         Row: {
           created_at: string
+          error_message: string | null
+          form_data: Json
           id: string
-          name: string | null
+          report_id: string | null
+          status: string
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          error_message?: string | null
+          form_data: Json
           id?: string
-          name?: string | null
+          report_id?: string | null
+          status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          error_message?: string | null
+          form_data?: Json
           id?: string
-          name?: string | null
+          report_id?: string | null
+          status?: string
           updated_at?: string
           user_id?: string
         }
         Relationships: []
       }
-      "user's_list": {
+      profiles: {
+        Row: {
+          created_at: string
+          name: string | null
+          plan: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          name?: string | null
+          plan?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          name?: string | null
+          plan?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      subscription: {
         Row: {
           created_at: string
           id: number
