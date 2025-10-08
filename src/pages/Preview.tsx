@@ -32,37 +32,19 @@ export default function Preview() {
         return;
       }
 
-      console.log('Fetching signed URLs for reportId:', reportId);
+      // Construct public storage URLs
+      const baseUrl = 'https://tvznnerrgaprchburewu.supabase.co/storage/v1/object/public/business-plans';
+      const previewUrl = `${baseUrl}/previews/${reportId}-preview2.pdf`;
+      const fullUrl = `${baseUrl}/reports/${reportId}.pdf`;
       
-      // Get signed preview URL
-      const { data: previewData, error: previewError } = await supabase.functions
-        .invoke('sign-user-pdf', {
-          body: { reportId, isPreview: true }
-        });
-
-      if (previewError) {
-        console.error('Error getting preview URL:', previewError);
-        setError('preview_not_ready');
-        return;
-      }
-
-      // Get signed download URL (full PDF)
-      const { data: downloadData, error: downloadError } = await supabase.functions
-        .invoke('sign-user-pdf', {
-          body: { reportId, isPreview: false }
-        });
-
-      if (downloadError) {
-        console.error('Error getting download URL:', downloadError);
-        // Preview still works, just no download
-      }
-
-      console.log('Successfully retrieved signed URLs');
-      setUrl(previewData.url);
-      setDownloadUrl(downloadData?.downloadUrl || null);
+      console.log('Preview URL:', previewUrl);
+      console.log('Full URL:', fullUrl);
+      
+      setUrl(previewUrl);
+      setDownloadUrl(fullUrl);
       
     } catch (error: any) {
-      console.error('Error fetching PDF URLs:', error);
+      console.error('Error constructing PDF URLs:', error);
       setError(error.message || 'Failed to load preview');
       toast({
         title: "Error",

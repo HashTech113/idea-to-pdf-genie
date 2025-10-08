@@ -70,24 +70,25 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
           }
         }
 
-        // Call edge function to get signed URL for preview
-        const { data: signData, error: signError } = await supabase.functions
-          .invoke('sign-user-pdf', {
-            body: { reportId: id, isPreview: true }
-          });
+        // Construct public storage URL
+        const previewUrl = `https://tvznnerrgaprchburewu.supabase.co/storage/v1/object/public/business-plans/previews/${id}-preview2.pdf`;
+        
+        // Check if the preview file exists
+        const response = await fetch(previewUrl, { method: 'HEAD' });
 
-        if (!signError && signData?.url) {
-          setPreviewUrl(signData.url);
+        if (response.ok) {
+          setPreviewUrl(previewUrl);
           setIsGenerating(false);
           return;
         }
 
-        // If file not found (preview not ready yet), use exponential backoff
-        if (signError && (signError.message?.includes('not_found') || signError.message?.includes('404'))) {
+        if (response.status === 404) {
+          // Preview not ready yet, use exponential backoff
+          // 3s, 5s, 8s, 12s, 18s, then 20s max
           const delay = Math.min(3000 * Math.pow(1.5, attempt), 20000);
           setTimeout(() => poll(attempt + 1), delay);
         } else {
-          throw new Error(signError?.message || 'Failed to fetch preview');
+          throw new Error('Failed to fetch preview');
         }
       } catch (err: any) {
         console.error('Error polling for preview:', err);

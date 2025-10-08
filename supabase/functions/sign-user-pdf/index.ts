@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
   if (req.method !== "POST")   return json(req, { error: "method_not_allowed" }, 405);
 
   try {
-    const { reportId, exp = 300, isPreview = false } = await req.json().catch(() => ({}));
+    const { reportId, exp = 300 } = await req.json().catch(() => ({}));
     if (!reportId) return json(req, { error: "missing_reportId" }, 400);
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -46,21 +46,21 @@ Deno.serve(async (req) => {
     if (!user) return json(req, { error: "unauthorized" }, 401);
 
     const svc = createClient(SUPABASE_URL, SVC);
-    const fileName = isPreview ? `${reportId}-preview2.pdf` : `${reportId}.pdf`;
-    const path = `private/${user.id}/${fileName}`;
+    const path = `private/${user.id}/${reportId}.pdf`;
 
-    console.log('Signing PDF for user:', user.id, 'reportId:', reportId, 'isPreview:', isPreview, 'path:', path);
+    console.log('Signing PDF for user:', user.id, 'reportId:', reportId, 'path:', path);
 
     // Confirm file exists
     const dir = `private/${user.id}`;
-    const { data: list, error: listError } = await svc.storage.from(BUCKET).list(dir, { search: fileName, limit: 1 });
+    const name = `${reportId}.pdf`;
+    const { data: list, error: listError } = await svc.storage.from(BUCKET).list(dir, { search: name, limit: 1 });
     
     if (listError) {
       console.error('Error listing files:', listError);
       return json(req, { error: listError.message }, 500);
     }
     
-    if (!list?.find(o => o.name === fileName)) {
+    if (!list?.find(o => o.name === name)) {
       console.error('File not found:', path);
       return json(req, { error: "not_found" }, 404);
     }
@@ -72,19 +72,15 @@ Deno.serve(async (req) => {
       return json(req, { error: view.error.message }, 500);
     }
 
-    // Download URL (forces filename) - only for full PDF, not preview
-    let downloadUrl = null;
-    if (!isPreview) {
-      const dl = await svc.storage.from(BUCKET).createSignedUrl(path, Number(exp), { download: fileName });
-      if (dl.error) {
-        console.error('Error creating download URL:', dl.error);
-        return json(req, { error: dl.error.message }, 500);
-      }
-      downloadUrl = dl.data.signedUrl;
+    // Download URL (forces filename)
+    const dl = await svc.storage.from(BUCKET).createSignedUrl(path, Number(exp), { download: name });
+    if (dl.error) {
+      console.error('Error creating download URL:', dl.error);
+      return json(req, { error: dl.error.message }, 500);
     }
 
-    console.log('Successfully signed URLs for reportId:', reportId, 'isPreview:', isPreview);
-    return json(req, { url: view.data.signedUrl, downloadUrl }, 200);
+    console.log('Successfully signed URLs for reportId:', reportId);
+    return json(req, { url: view.data.signedUrl, downloadUrl: dl.data.signedUrl }, 200);
   } catch (e: any) {
     console.error('Error in sign-user-pdf:', e);
     return json(req, { error: String(e?.message ?? e) }, 500);
