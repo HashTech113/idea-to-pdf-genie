@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import { LogOut } from 'lucide-react';
 import { FormData } from '../MultiStepBusinessPlanForm';
 
 interface Step2Props {
@@ -11,10 +12,11 @@ interface Step2Props {
   updateData: (data: Partial<FormData>) => void;
   onNext: () => void;
   onPrev: () => void;
+  onLogout: () => void;
   isLoading?: boolean;
 }
 
-export const Step2BasicInfo = ({ data, updateData, onNext, onPrev, isLoading }: Step2Props) => {
+export const Step2BasicInfo = ({ data, updateData, onNext, onPrev, onLogout, isLoading }: Step2Props) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validate = () => {
@@ -181,13 +183,22 @@ export const Step2BasicInfo = ({ data, updateData, onNext, onPrev, isLoading }: 
         </div>
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex flex-col gap-3">
         <Button
           onClick={handleNext}
           disabled={isLoading}
           className="w-full h-12 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-primary-foreground disabled:opacity-50"
         >
           {isLoading ? 'Generating Preview...' : 'View Preview'}
+        </Button>
+        
+        <Button
+          onClick={onLogout}
+          variant="outline"
+          className="w-full h-12 gap-2"
+        >
+          <LogOut className="h-4 w-4" />
+          Logout
         </Button>
       </div>
     </div>

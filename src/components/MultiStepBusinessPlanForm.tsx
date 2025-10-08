@@ -2,8 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
-import { LogOut } from 'lucide-react';
 import { Step2BasicInfo } from './steps/Step2BasicInfo';
 import { PreviewModal } from './PreviewModal';
 
@@ -122,6 +120,7 @@ export const MultiStepBusinessPlanForm = () => {
         updateData={updateFormData}
         onNext={submitForm}
         onPrev={() => {}} // No previous step
+        onLogout={handleLogout}
         isLoading={false}
       />
     );
@@ -131,19 +130,6 @@ export const MultiStepBusinessPlanForm = () => {
     <>
       <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
         <div className="max-w-2xl mx-auto">
-          {/* Logout Button */}
-          <div className="flex justify-end mb-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleLogout}
-              className="gap-2"
-            >
-              <LogOut className="h-4 w-4" />
-              Logout
-            </Button>
-          </div>
-          
           {/* Form Card */}
           <div className="bg-card rounded-2xl p-6 sm:p-8 lg:p-10 border border-border" style={{ boxShadow: 'var(--shadow-large)' }}>
             {renderStep()}
