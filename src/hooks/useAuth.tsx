@@ -77,14 +77,34 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+    
+    // Update last_login timestamp on successful login
+    if (!error && data.user) {
+      setTimeout(() => {
+        supabase
+          .from('profiles')
+          .update({ last_login: new Date().toISOString() })
+          .eq('user_id', data.user.id)
+          .then(() => {});
+      }, 0);
+    }
+    
     return { error };
   };
 
   const signOut = async () => {
+    // Update last_login timestamp before logout (tracks logout time)
+    if (user) {
+      await supabase
+        .from('profiles')
+        .update({ last_login: new Date().toISOString() })
+        .eq('user_id', user.id);
+    }
+    
     // Clear localStorage session
     localStorage.removeItem('supabase.auth.token');
     
