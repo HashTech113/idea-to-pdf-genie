@@ -11,10 +11,9 @@ export default function Preview() {
   const { toast } = useToast();
   
   const [isLoading, setIsLoading] = useState(true);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [url, setUrl] = useState<string | null>(null);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [userPlan, setUserPlan] = useState<string>('free');
   const [retryCount, setRetryCount] = useState(0);
 
   const fetchPreview = async () => {
@@ -33,45 +32,25 @@ export default function Preview() {
         return;
       }
 
-      // Get user plan
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('plan')
-        .eq('user_id', session.user.id)
-        .single();
+      // Call sign-user-pdf function using supabase client
+      const { data, error: invokeError } = await supabase.functions.invoke("sign-user-pdf", {
+        body: { reportId, exp: 300 }
+      });
 
-      const plan = (profile as any)?.plan || 'free';
-      setUserPlan(plan);
-
-      // Call sign-report function with authorization header
-      const response = await fetch(
-        `https://tvznnerrgaprchburewu.supabase.co/functions/v1/sign-report?reportId=${reportId}&exp=300`,
-        {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        if (response.status === 409 && errorData.error === 'preview_not_ready') {
+      if (invokeError) {
+        if (invokeError.message?.includes('not_found')) {
           setError('preview_not_ready');
         } else {
-          throw new Error(errorData.error || 'Failed to fetch preview');
+          throw new Error(invokeError.message || 'Failed to fetch preview');
         }
         return;
       }
 
-      const data = await response.json();
-      
-      // Safety check: ensure previewUrl is absolute HTTPS URL from Supabase
-      if (data.previewUrl && !data.previewUrl.startsWith('https://')) {
-        throw new Error('Invalid preview URL received');
+      if (!data?.url) {
+        throw new Error('Invalid response from server');
       }
       
-      setPreviewUrl(data.previewUrl);
+      setUrl(data.url);
       setDownloadUrl(data.downloadUrl);
       
     } catch (error: any) {
@@ -94,24 +73,20 @@ export default function Preview() {
   }, [reportId, retryCount]);
 
   const handleDownload = () => {
-    if (userPlan !== 'pro') {
+    if (!downloadUrl) {
       toast({
-        title: "Upgrade Required",
-        description: "Please upgrade to Pro to download the full report.",
+        title: "Download not available",
+        description: "Please wait for the preview to load.",
         variant: "destructive",
       });
-      navigate('/pricing');
       return;
     }
 
-    if (downloadUrl) {
-      // Open download URL in new tab
-      window.open(downloadUrl, '_blank');
-      toast({
-        title: "Download Started",
-        description: "Your full business plan is downloading.",
-      });
-    }
+    window.open(downloadUrl, '_blank');
+    toast({
+      title: "Download Started",
+      description: "Your business plan is downloading.",
+    });
   };
 
   const handleRetry = () => {
@@ -163,18 +138,18 @@ export default function Preview() {
           </div>
         )}
 
-        {previewUrl && !isLoading && !error && (
+        {url && !isLoading && !error && (
           <div className="w-full h-full">
             <h1 className="text-3xl font-bold text-foreground mb-4">
-              Business Plan Preview {userPlan === 'free' && '(First 2 Pages)'}
+              Business Plan Preview
             </h1>
-            <iframe
-              title="Business Plan Preview"
-              src={previewUrl}
-              className="w-full h-[80vh] border-0"
-              loading="lazy"
-              referrerPolicy="no-referrer"
-            />
+            <div className="h-[80vh] w-full rounded-xl overflow-hidden border">
+              <iframe
+                title="Your PDF"
+                src={url}
+                className="w-full h-full border-0"
+              />
+            </div>
           </div>
         )}
       </div>
@@ -190,7 +165,7 @@ export default function Preview() {
         </Button>
         <Button
           onClick={handleDownload}
-          disabled={userPlan !== 'pro' || !downloadUrl}
+          disabled={!downloadUrl}
           className="shadow-lg"
         >
           Download PDF
