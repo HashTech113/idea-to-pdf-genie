@@ -29,7 +29,7 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
   };
 
   const pollForPreview = async (id: string, startTime: number = Date.now()) => {
-    const maxPollingTime = 180000; // 3 minutes
+    const maxPollingTime = 300000; // 5 minutes
     
     const poll = async (attempt: number) => {
       const elapsedTime = Date.now() - startTime;
@@ -61,9 +61,13 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
           .maybeSingle();
 
         if ((jobData as any)?.status === 'failed') {
-          setError(`PDF generation failed: ${(jobData as any)?.error_message || 'Unknown error'}`);
-          setIsGenerating(false);
-          return;
+          const errorMsg = (jobData as any)?.error_message || '';
+          // If it's a timeout error, continue polling as the job may still be processing
+          if (!/timed out/i.test(errorMsg)) {
+            setError(`PDF generation failed: ${errorMsg || 'Unknown error'}`);
+            setIsGenerating(false);
+            return;
+          }
         }
 
         const response = await fetch(
@@ -203,8 +207,8 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
               <h3 className="text-xl font-semibold text-foreground">
                 Generating your PDF...
               </h3>
-              <p className="text-muted-foreground max-w-md">
-                This may take up to 3 minutes. Please don't close this window.
+               <p className="text-muted-foreground max-w-md">
+                This may take up to 5 minutes. Please don't close this window.
               </p>
               {pollingAttempts > 0 && (
                 <p className="text-xs text-muted-foreground">
@@ -230,16 +234,22 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
           )}
 
           {previewUrl && !isGenerating && (
-            <object
-              data={previewUrl}
-              type="application/pdf"
-              className="w-full h-full border-0 rounded-lg shadow-lg"
-              aria-label="Business Plan Preview"
-            >
-              <p className="text-center text-muted-foreground p-4">
-                Unable to display PDF. <a href={previewUrl} className="text-primary underline" target="_blank" rel="noopener noreferrer">Download PDF</a>
-              </p>
-            </object>
+            <div className="w-full h-full flex flex-col gap-2">
+              <iframe
+                title="Business Plan Preview"
+                src={previewUrl}
+                className="w-full h-full border-0 rounded-lg shadow-lg"
+                loading="lazy"
+              />
+              <a 
+                href={previewUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-xs text-center text-primary hover:underline"
+              >
+                Open in new tab
+              </a>
+            </div>
           )}
         </div>
 

@@ -101,14 +101,22 @@ serve(async (req) => {
       } catch (error) {
         console.error('Error calling n8n webhook:', error);
         
-        // Update job status to failed
-        await supabase
-          .from('jobs')
-          .update({ 
-            status: 'failed',
-            error_message: error.message || 'Webhook call failed'
-          })
-          .eq('report_id', reportId);
+        // Only mark as failed if it's not a timeout error
+        // Timeouts are expected for long-running processes
+        const isTimeout = error.message?.includes('timed out') || error.message?.includes('TimeoutError');
+        
+        if (!isTimeout) {
+          // Update job status to failed only for non-timeout errors
+          await supabase
+            .from('jobs')
+            .update({ 
+              status: 'failed',
+              error_message: error.message || 'Webhook call failed'
+            })
+            .eq('report_id', reportId);
+        } else {
+          console.log('Webhook timed out, but job will continue processing in background');
+        }
       }
     };
 
