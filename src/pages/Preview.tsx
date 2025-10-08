@@ -32,29 +32,19 @@ export default function Preview() {
         return;
       }
 
-      // Call sign-user-pdf function using supabase client
-      const { data, error: invokeError } = await supabase.functions.invoke("sign-user-pdf", {
-        body: { reportId, exp: 300 }
-      });
-
-      if (invokeError) {
-        if (invokeError.message?.includes('not_found')) {
-          setError('preview_not_ready');
-        } else {
-          throw new Error(invokeError.message || 'Failed to fetch preview');
-        }
-        return;
-      }
-
-      if (!data?.url) {
-        throw new Error('Invalid response from server');
-      }
+      // Construct public storage URLs
+      const baseUrl = 'https://tvznnerrgaprchburewu.supabase.co/storage/v1/object/public/business-plans';
+      const previewUrl = `${baseUrl}/previews/${reportId}-preview2.pdf`;
+      const fullUrl = `${baseUrl}/reports/${reportId}.pdf`;
       
-      setUrl(data.url);
-      setDownloadUrl(data.downloadUrl);
+      console.log('Preview URL:', previewUrl);
+      console.log('Full URL:', fullUrl);
+      
+      setUrl(previewUrl);
+      setDownloadUrl(fullUrl);
       
     } catch (error: any) {
-      console.error('Error fetching preview:', error);
+      console.error('Error constructing PDF URLs:', error);
       setError(error.message || 'Failed to load preview');
       toast({
         title: "Error",
