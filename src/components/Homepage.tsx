@@ -14,14 +14,26 @@ const Homepage = () => {
       // Create anonymous user
       const { data, error } = await supabase.auth.signInAnonymously();
       
-      if (error) throw error;
+      if (error) {
+        // If anonymous sign-in is disabled, show helpful message
+        if (error.message?.includes('Anonymous') || error.message?.includes('anonymous')) {
+          toast({
+            title: "Setup Required",
+            description: "Please enable anonymous sign-ins in your Supabase dashboard under Authentication > Providers",
+            variant: "destructive",
+          });
+        } else {
+          throw error;
+        }
+        return;
+      }
       
       // Navigate to business plan form
       navigate('/business-plan');
     } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to start. Please try again.",
+        description: error.message || "Failed to start. Please try again.",
         variant: "destructive",
       });
     }
