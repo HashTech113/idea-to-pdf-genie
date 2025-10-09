@@ -70,14 +70,17 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
           }
         }
 
-        // Construct public storage URL
-        const previewUrl = `https://tvznnerrgaprchburewu.supabase.co/storage/v1/object/public/business-plans/previews/${id}-preview2.pdf`;
-        
-        // Check if the preview file exists
-        const response = await fetch(previewUrl, { method: 'HEAD' });
+        // Call edge function to get signed URL for preview
+        const functionUrl = `https://tvznnerrgaprchburewu.supabase.co/functions/v1/get-preview-pdf?reportId=${id}&exp=300`;
+        const response = await fetch(functionUrl, {
+          headers: {
+            Authorization: `Bearer ${currentSession.access_token}`,
+          },
+        });
 
         if (response.ok) {
-          setPreviewUrl(previewUrl);
+          const data = await response.json();
+          setPreviewUrl(data.previewUrl);
           setIsGenerating(false);
           return;
         }
@@ -88,12 +91,20 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
           const delay = Math.min(3000 * Math.pow(1.5, attempt), 20000);
           setTimeout(() => poll(attempt + 1), delay);
         } else {
-          throw new Error('Failed to fetch preview');
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to fetch preview');
         }
       } catch (err: any) {
         console.error('Error polling for preview:', err);
-        setError(err.message || 'Failed to load preview');
-        setIsGenerating(false);
+        // Only set error if it's not a preview_not_found error (which means we should keep polling)
+        if (!err.message?.includes('preview_not_found')) {
+          setError(err.message || 'Failed to load preview');
+          setIsGenerating(false);
+        } else {
+          // Continue polling if preview not found
+          const delay = Math.min(3000 * Math.pow(1.5, attempt), 20000);
+          setTimeout(() => poll(attempt + 1), delay);
+        }
       }
     };
 
