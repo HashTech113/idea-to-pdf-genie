@@ -1,24 +1,15 @@
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-const BUCKET = "business-plans";
-
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET,OPTIONS",
+  "Access-Control-Allow-Headers": "authorization,apikey,x-client-info,content-type",
 };
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  if (req.method !== "GET") {
-    return new Response(
-      JSON.stringify({ error: "method_not_allowed" }),
-      { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
@@ -27,63 +18,41 @@ Deno.serve(async (req) => {
     const exp = Number(url.searchParams.get("exp") ?? 300);
 
     if (!reportId) {
-      return new Response(
-        JSON.stringify({ error: "missing_reportId" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Missing reportId" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     console.log(`Generating signed URL for preview: ${reportId}`);
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-    // Check if preview exists
-    const previewPath = `previews/${reportId}-preview2.pdf`;
-    const { data: list, error: listError } = await supabase.storage
-      .from(BUCKET)
-      .list("previews", { search: `${reportId}-preview2.pdf`, limit: 1 });
+    const path = `previews/${reportId}-preview2.pdf`;
+    const { data, error } = await supabase.storage
+      .from("business-plans")
+      .createSignedUrl(path, exp);
 
-    if (listError) {
-      console.error("Error listing files:", listError);
-      return new Response(
-        JSON.stringify({ error: listError.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    if (!list?.find(f => f.name === `${reportId}-preview2.pdf`)) {
-      console.log("Preview not found");
-      return new Response(
-        JSON.stringify({ error: "preview_not_found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Create signed URL
-    const { data: signedData, error: signError } = await supabase.storage
-      .from(BUCKET)
-      .createSignedUrl(previewPath, exp);
-
-    if (signError) {
-      console.error("Error creating signed URL:", signError);
-      return new Response(
-        JSON.stringify({ error: signError.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (error) {
+      console.error("Error creating signed URL:", error);
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     console.log("Signed URL generated successfully");
-    return new Response(
-      JSON.stringify({ previewUrl: signedData.signedUrl }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ previewUrl: data.signedUrl }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error: any) {
     console.error("Unexpected error:", error);
-    return new Response(
-      JSON.stringify({ error: error.message || "Internal server error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: error.message || "Internal server error" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
