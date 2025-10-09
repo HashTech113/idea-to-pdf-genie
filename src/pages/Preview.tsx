@@ -17,12 +17,13 @@ export default function Preview() {
   const [isGenerating, setIsGenerating] = useState(true);
   const [jobStatus, setJobStatus] = useState<string>("processing");
   const [loadingMessage, setLoadingMessage] = useState("Generating your business plan...");
+  const [pollingStartTime] = useState<number>(Date.now());
+  const [isPdfPollingActive, setIsPdfPollingActive] = useState(false);
 
   // Update loading message based on elapsed time
   useEffect(() => {
-    const startTime = Date.now();
     const messageInterval = setInterval(() => {
-      const elapsed = Date.now() - startTime;
+      const elapsed = Date.now() - pollingStartTime;
       if (elapsed < 30000) {
         setLoadingMessage("Generating your business plan...");
       } else if (elapsed < 120000) {
@@ -33,7 +34,32 @@ export default function Preview() {
     }, 5000);
 
     return () => clearInterval(messageInterval);
-  }, []);
+  }, [pollingStartTime]);
+
+  // Start parallel PDF polling after 30 seconds if job is still processing
+  useEffect(() => {
+    const elapsed = Date.now() - pollingStartTime;
+    
+    // If already have preview URL or PDF polling is active, do nothing
+    if (url || isPdfPollingActive) return;
+    
+    // If less than 30 seconds, set a timer
+    if (elapsed < 30000) {
+      const timer = setTimeout(() => {
+        if (!url && (jobStatus === 'processing' || jobStatus === 'queued')) {
+          console.log('30 seconds elapsed, starting parallel PDF polling');
+          setIsPdfPollingActive(true);
+        }
+      }, 30000 - elapsed);
+      return () => clearTimeout(timer);
+    }
+    
+    // If more than 30 seconds and still processing, start polling now
+    if (jobStatus === 'processing' || jobStatus === 'queued') {
+      console.log('Starting parallel PDF polling (already past 30s)');
+      setIsPdfPollingActive(true);
+    }
+  }, [jobStatus, pollingStartTime, url, isPdfPollingActive]);
 
   useEffect(() => {
     if (!reportId) return;
@@ -132,11 +158,24 @@ export default function Preview() {
     };
 
     const pollForPdfPreview = async () => {
+      // Prevent duplicate polling if URL already found
+      if (url) {
+        console.log('Preview URL already set, skipping PDF polling');
+        return;
+      }
+      
       let pdfAttempts = 0;
-      const maxPdfAttempts = 30; // 30 * 2s = 1 minute for PDF file polling
+      const maxPdfAttempts = 60; // 60 * 2s = 2 minutes for PDF file polling
       let pdfDelay = 2000;
 
       const poll = async () => {
+        // Stop if we already have a preview URL (from parallel polling)
+        if (url) {
+          console.log('Preview URL found by another poller, stopping');
+          setIsPdfPollingActive(false);
+          return;
+        }
+        
         try {
           pdfAttempts++;
           
@@ -145,6 +184,7 @@ export default function Preview() {
               setError('PDF preview is taking longer than expected. Please try refreshing the page.');
               setIsGenerating(false);
               setIsLoading(false);
+              setIsPdfPollingActive(false);
             }
             return;
           }
@@ -211,6 +251,7 @@ export default function Preview() {
               setDownloadUrl(data.previewUrl);
               setIsGenerating(false);
               setIsLoading(false);
+              setIsPdfPollingActive(false);
               toast({
                 title: "Preview ready!",
                 description: "Your business plan preview is now available.",
@@ -233,6 +274,11 @@ export default function Preview() {
     };
 
     pollForJobStatus();
+    
+    // Also start PDF polling if triggered by the parallel polling effect
+    if (isPdfPollingActive && !url) {
+      pollForPdfPreview();
+    }
     
     return () => {
       mounted = false;
