@@ -60,3 +60,6 @@ verify_jwt = false
 
 [functions.sign-report]
 verify_jwt = false
+
+[functions.get-preview-pdf]
+verify_jwt = false

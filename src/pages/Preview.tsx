@@ -32,19 +32,35 @@ export default function Preview() {
         return;
       }
 
-      // Construct public storage URLs
-      const baseUrl = 'https://tvznnerrgaprchburewu.supabase.co/storage/v1/object/public/business-plans';
-      const previewUrl = `${baseUrl}/previews/${reportId}-preview2.pdf`;
-      const fullUrl = `${baseUrl}/reports/${reportId}.pdf`;
+      console.log('Fetching signed preview URL for:', reportId);
+
+      // Call edge function to get signed preview URL
+      const functionUrl = `https://tvznnerrgaprchburewu.supabase.co/functions/v1/get-preview-pdf?reportId=${reportId}&exp=300`;
+      const response = await fetch(functionUrl, {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (errorData.error === 'preview_not_found') {
+          setError('preview_not_ready');
+          return;
+        }
+        throw new Error(errorData.error || 'Failed to get preview URL');
+      }
+
+      const data = await response.json();
+      console.log('Preview URL received');
       
-      console.log('Preview URL:', previewUrl);
-      console.log('Full URL:', fullUrl);
-      
-      setUrl(previewUrl);
-      setDownloadUrl(fullUrl);
+      setUrl(data.previewUrl);
+      // For download, we'll use the public URL
+      const downloadUrl = `https://tvznnerrgaprchburewu.supabase.co/storage/v1/object/public/business-plans/reports/${reportId}.pdf`;
+      setDownloadUrl(downloadUrl);
       
     } catch (error: any) {
-      console.error('Error constructing PDF URLs:', error);
+      console.error('Error fetching preview:', error);
       setError(error.message || 'Failed to load preview');
       toast({
         title: "Error",
