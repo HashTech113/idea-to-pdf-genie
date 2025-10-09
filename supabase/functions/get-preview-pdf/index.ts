@@ -1,49 +1,55 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET,OPTIONS",
+  "Access-Control-Allow-Headers": "authorization,apikey,x-client-info,content-type",
+};
+
 Deno.serve(async (req) => {
-  // Allow preflight
   if (req.method === "OPTIONS") {
-    return new Response("ok", {
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET,OPTIONS",
-        "Access-Control-Allow-Headers": "authorization,apikey,x-client-info,content-type",
-      },
-    });
+    return new Response("ok", { headers: CORS_HEADERS });
   }
 
-  // Validate request
   const url = new URL(req.url);
   const reportId = url.searchParams.get("reportId");
   if (!reportId)
     return new Response(JSON.stringify({ error: "Missing reportId" }), {
       status: 400,
-      headers: { "Content-Type": "application/json" },
+      headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
 
-  // Initialize Supabase client with Service Role key
-  const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-  const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
 
-  // Create a signed URL for the 2-page preview
+  // Check if the preview exists
   const path = `previews/${reportId}-preview2.pdf`;
+  const { data: list } = await supabase.storage
+    .from("business-plans")
+    .list("previews", { search: `${reportId}-preview2.pdf`, limit: 1 });
+
+  if (!list?.length)
+    return new Response(JSON.stringify({ status: "preparing" }), {
+      status: 202,
+      headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+    });
+
+  // Return signed URL
   const { data, error } = await supabase.storage
     .from("business-plans")
-    .createSignedUrl(path, 300); // expires in 5 mins
+    .createSignedUrl(path, 300);
 
   if (error)
     return new Response(JSON.stringify({ error: error.message }), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
 
   return new Response(JSON.stringify({ previewUrl: data.signedUrl }), {
     status: 200,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Content-Type": "application/json",
-    },
+    headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
   });
 });
