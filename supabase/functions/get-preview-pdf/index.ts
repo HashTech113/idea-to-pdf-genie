@@ -25,31 +25,37 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  // Check if the preview exists
-  const path = `previews/${reportId}-preview2.pdf`;
-  const { data: list } = await supabase.storage
-    .from("business-plans")
-    .list("previews", { search: `${reportId}-preview2.pdf`, limit: 1 });
+  // Try multiple possible paths for the preview/final PDF
+  const candidates = [
+    `previews/${reportId}-preview2.pdf`,
+    `previews/${reportId}-preview.pdf`,
+    `previews/${reportId}.pdf`,
+    `reports/${reportId}.pdf`,
+  ];
 
-  if (!list?.length)
-    return new Response(JSON.stringify({ status: "preparing" }), {
-      status: 202,
-      headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-    });
+  for (const path of candidates) {
+    const { data, error } = await supabase.storage
+      .from("business-plans")
+      .createSignedUrl(path, 300);
 
-  // Return signed URL
-  const { data, error } = await supabase.storage
-    .from("business-plans")
-    .createSignedUrl(path, 300);
+    if (data?.signedUrl) {
+      console.log(`Found preview at: ${path}`);
+      return new Response(
+        JSON.stringify({ previewUrl: data.signedUrl, path }),
+        {
+          status: 200,
+          headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+        }
+      );
+    } else if (error) {
+      // Continue trying other candidates if this one doesn't exist
+      console.log(`Path not available yet: ${path} - ${error.message}`);
+    }
+  }
 
-  if (error)
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 404,
-      headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-    });
-
-  return new Response(JSON.stringify({ previewUrl: data.signedUrl }), {
-    status: 200,
+  // If none of the candidates exist yet, indicate that it's still preparing
+  return new Response(JSON.stringify({ status: "preparing" }), {
+    status: 202,
     headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
   });
 });
