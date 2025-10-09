@@ -53,13 +53,8 @@ export default function Generating() {
         throw response.error;
       }
 
-      // Ensure the response is successful before navigating
-      if (response.data?.success) {
-        // Navigate to preview page
-        navigate(`/preview/${reportId}`, { replace: true });
-      } else {
-        throw new Error('Failed to start generation');
-      }
+      // Proceed to preview once the function call returns (even if it doesn't include a success flag)
+      navigate(`/preview/${reportId}`, { replace: true });
       
     } catch (error) {
       console.error('Error starting PDF generation:', error);
