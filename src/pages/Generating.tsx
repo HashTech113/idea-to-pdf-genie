@@ -53,7 +53,7 @@ export default function Generating() {
         throw response.error;
       }
 
-      // Proceed to preview once the function call returns (even if it doesn't include a success flag)
+      // Navigate to preview page immediately - it will handle polling for completion
       navigate(`/preview/${reportId}`, { replace: true });
       
     } catch (error) {

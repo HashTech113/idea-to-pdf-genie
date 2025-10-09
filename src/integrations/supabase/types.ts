@@ -40,30 +40,36 @@ export type Database = {
       }
       jobs: {
         Row: {
+          completed_at: string | null
           created_at: string
           error_message: string | null
           form_data: Json
           id: string
+          pdf_path: string | null
           report_id: string | null
           status: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          completed_at?: string | null
           created_at?: string
           error_message?: string | null
           form_data: Json
           id?: string
+          pdf_path?: string | null
           report_id?: string | null
           status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          completed_at?: string | null
           created_at?: string
           error_message?: string | null
           form_data?: Json
           id?: string
+          pdf_path?: string | null
           report_id?: string | null
           status?: string
           updated_at?: string

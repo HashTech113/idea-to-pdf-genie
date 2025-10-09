@@ -15,22 +15,41 @@ export default function Preview() {
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(true);
+  const [jobStatus, setJobStatus] = useState<string>("processing");
+  const [loadingMessage, setLoadingMessage] = useState("Generating your business plan...");
+
+  // Update loading message based on elapsed time
+  useEffect(() => {
+    const startTime = Date.now();
+    const messageInterval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 30000) {
+        setLoadingMessage("Generating your business plan...");
+      } else if (elapsed < 120000) {
+        setLoadingMessage("Almost there, crafting your comprehensive plan...");
+      } else {
+        setLoadingMessage("This is taking a bit longer than usual, but we're still working on it...");
+      }
+    }, 5000);
+
+    return () => clearInterval(messageInterval);
+  }, []);
 
   useEffect(() => {
     if (!reportId) return;
     
     let mounted = true;
-    let delay = 2000;
-    let attempts = 0;
-    const maxAttempts = 60; // 60 attempts with exponential backoff = ~5 minutes
+    let jobPollDelay = 2000;
+    let jobAttempts = 0;
+    const maxJobAttempts = 150; // 150 * 2s = 5 minutes
 
-    const pollForPreview = async () => {
+    const pollForJobStatus = async () => {
       try {
-        attempts++;
+        jobAttempts++;
         
-        if (attempts > maxAttempts) {
+        if (jobAttempts > maxJobAttempts) {
           if (mounted) {
-            setError('PDF generation is taking longer than expected. Please try again later.');
+            setError('Generation is taking longer than expected. Please check back later.');
             setIsGenerating(false);
             setIsLoading(false);
           }
@@ -48,94 +67,172 @@ export default function Preview() {
           return;
         }
 
-        console.log(`Polling for preview (attempt ${attempts}/${maxAttempts}):`, reportId);
+        console.log(`Polling job status (attempt ${jobAttempts}/${maxJobAttempts}):`, reportId);
 
-        // Use direct fetch for consistent handling
-        const response = await fetch(
-          `https://tvznnerrgaprchburewu.supabase.co/functions/v1/get-preview-pdf?reportId=${reportId}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${session.access_token}`,
-              'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2em5uZXJyZ2FwcmNoYnVyZXd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3OTAxNzUsImV4cCI6MjA3NDM2NjE3NX0._vuf_ZB8i-_GFDz2vIc_6y_6FzjeEkGTOKz90sxiEnY',
-            },
-          }
-        );
+        // Check job status in database
+        const { data: job, error: jobError } = await supabase
+          .from('jobs')
+          .select('status, error_message, pdf_path, completed_at')
+          .eq('report_id', reportId)
+          .maybeSingle();
 
-        // Handle non-OK responses gracefully
-        if (response.status === 404 || response.status === 202) {
-          console.log('Preview not ready yet (404/202), retrying...');
+        if (jobError) {
+          console.error('Error fetching job status:', jobError);
           if (!mounted) return;
           
-          await new Promise(resolve => setTimeout(resolve, delay));
-          delay = Math.min(delay * 1.2, 5000);
-          pollForPreview();
+          await new Promise(resolve => setTimeout(resolve, jobPollDelay));
+          pollForJobStatus();
           return;
         }
 
-        // Try to parse JSON, handle gracefully if it fails
-        let data;
-        try {
-          data = await response.json();
-        } catch (jsonError) {
-          console.log('JSON parse error (transient), retrying...');
+        if (!job) {
+          console.log('Job not found yet, retrying...');
           if (!mounted) return;
           
-          await new Promise(resolve => setTimeout(resolve, delay));
-          delay = Math.min(delay * 1.2, 5000);
-          pollForPreview();
+          await new Promise(resolve => setTimeout(resolve, jobPollDelay));
+          pollForJobStatus();
           return;
         }
 
-        // Handle "preparing" status
-        if (data?.status === 'preparing') {
-          console.log('Preview not ready yet, retrying...');
-          if (!mounted) return;
-          
-          await new Promise(resolve => setTimeout(resolve, delay));
-          delay = Math.min(delay * 1.2, 5000);
-          pollForPreview();
-          return;
-        }
-
-        // Success case
-        if (data?.previewUrl) {
-          console.log('Preview URL received:', data.path);
-          
-          if (mounted) {
-            setUrl(data.previewUrl);
-            setDownloadUrl(data.previewUrl); // Use the same signed URL for download
-            setIsGenerating(false);
-            setIsLoading(false);
-          }
-        } else if (!response.ok) {
-          // Only treat as error if response is not OK and we have no previewUrl
-          throw new Error(data?.error || 'Failed to load preview');
-        }
-        
-      } catch (error: any) {
-        console.error('Error polling for preview:', error);
+        console.log('Job status:', job.status, 'Path:', job.pdf_path);
         if (mounted) {
-          // Only show error for true, non-recoverable errors
-          if (error.message?.includes('Authentication') || error.message?.includes('network')) {
-            setError(error.message || 'Failed to load preview');
+          setJobStatus(job.status);
+        }
+
+        if (job.status === 'completed' && job.pdf_path) {
+          // Job is complete, now fetch the PDF preview
+          console.log('Job completed, fetching PDF preview...');
+          pollForPdfPreview();
+          return;
+        }
+
+        if (job.status === 'failed') {
+          if (mounted) {
+            setError(job.error_message || 'PDF generation failed. Please try again.');
             setIsGenerating(false);
             setIsLoading(false);
-            toast({
-              title: "Error",
-              description: error.message || "Failed to load preview. Please try again.",
-              variant: "destructive",
-            });
-          } else {
-            // For other errors, just retry
-            await new Promise(resolve => setTimeout(resolve, delay));
-            delay = Math.min(delay * 1.2, 5000);
-            pollForPreview();
           }
+          return;
         }
+
+        // Still processing, continue polling with backoff
+        if (!mounted) return;
+        
+        jobPollDelay = Math.min(jobPollDelay * 1.1, 5000);
+        await new Promise(resolve => setTimeout(resolve, jobPollDelay));
+        pollForJobStatus();
+        
+      } catch (err) {
+        console.error('Error in job status polling:', err);
+        if (!mounted) return;
+        
+        await new Promise(resolve => setTimeout(resolve, jobPollDelay));
+        pollForJobStatus();
       }
     };
 
-    pollForPreview();
+    const pollForPdfPreview = async () => {
+      let pdfAttempts = 0;
+      const maxPdfAttempts = 30; // 30 * 2s = 1 minute for PDF file polling
+      let pdfDelay = 2000;
+
+      const poll = async () => {
+        try {
+          pdfAttempts++;
+          
+          if (pdfAttempts > maxPdfAttempts) {
+            if (mounted) {
+              setError('PDF preview is taking longer than expected. Please try refreshing the page.');
+              setIsGenerating(false);
+              setIsLoading(false);
+            }
+            return;
+          }
+
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) {
+            navigate(`/login?next=/preview/${reportId}`);
+            return;
+          }
+
+          console.log(`Polling for PDF file (attempt ${pdfAttempts}/${maxPdfAttempts})...`);
+
+          const response = await fetch(
+            `https://tvznnerrgaprchburewu.supabase.co/functions/v1/get-preview-pdf?reportId=${reportId}`,
+            {
+              headers: {
+                'Authorization': `Bearer ${session.access_token}`,
+                'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2em5uZXJyZ2FwcmNoYnVyZXd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3OTAxNzUsImV4cCI6MjA3NDM2NjE3NX0._vuf_ZB8i-_GFDz2vIc_6y_6FzjeEkGTOKz90sxiEnY',
+              },
+            }
+          );
+
+          // Handle non-OK responses
+          if (response.status === 404 || response.status === 202) {
+            console.log('PDF file not ready yet, retrying...');
+            if (!mounted) return;
+            
+            pdfDelay = Math.min(pdfDelay * 1.1, 5000);
+            await new Promise(resolve => setTimeout(resolve, pdfDelay));
+            poll();
+            return;
+          }
+
+          // Parse JSON
+          let data;
+          try {
+            data = await response.json();
+          } catch (jsonError) {
+            console.log('JSON parse error, retrying...');
+            if (!mounted) return;
+            
+            await new Promise(resolve => setTimeout(resolve, pdfDelay));
+            poll();
+            return;
+          }
+
+          // Handle "preparing" status
+          if (data?.status === 'preparing') {
+            console.log('PDF still preparing, retrying...');
+            if (!mounted) return;
+            
+            pdfDelay = Math.min(pdfDelay * 1.1, 5000);
+            await new Promise(resolve => setTimeout(resolve, pdfDelay));
+            poll();
+            return;
+          }
+
+          // Success case
+          if (data?.previewUrl) {
+            console.log('Preview URL received:', data.path);
+            
+            if (mounted) {
+              setUrl(data.previewUrl);
+              setDownloadUrl(data.previewUrl);
+              setIsGenerating(false);
+              setIsLoading(false);
+              toast({
+                title: "Preview ready!",
+                description: "Your business plan preview is now available.",
+              });
+            }
+          } else if (!response.ok) {
+            throw new Error(data?.error || 'Failed to load preview');
+          }
+          
+        } catch (error: any) {
+          console.error('Error polling for PDF:', error);
+          if (!mounted) return;
+          
+          await new Promise(resolve => setTimeout(resolve, pdfDelay));
+          poll();
+        }
+      };
+
+      poll();
+    };
+
+    pollForJobStatus();
     
     return () => {
       mounted = false;
@@ -170,17 +267,15 @@ export default function Preview() {
     <div className="min-h-screen bg-background flex flex-col">
       <div className="flex-1 p-6">
         {isGenerating && isLoading && (
-          <div className="flex flex-col items-center justify-center h-full space-y-4">
+          <div className="flex flex-col items-center justify-center h-full space-y-6">
             <Loader2 className="w-16 h-16 text-primary animate-spin" />
-            <h2 className="text-2xl font-semibold text-foreground">
-              Generating your PDF...
-            </h2>
-            <p className="text-muted-foreground max-w-md text-center">
-              This may take up to 5 minutes. Please don't close this window.
-            </p>
-            <p className="text-muted-foreground text-sm">
-              Your business plan is being created in the background.
-            </p>
+            <div className="text-center space-y-2">
+              <h2 className="text-2xl font-semibold text-foreground">{loadingMessage}</h2>
+              <p className="text-muted-foreground">This may take a few moments. Please don't close this page.</p>
+              {jobStatus === 'processing' && (
+                <p className="text-sm text-muted-foreground mt-2">Status: Processing your business plan...</p>
+              )}
+            </div>
           </div>
         )}
 
