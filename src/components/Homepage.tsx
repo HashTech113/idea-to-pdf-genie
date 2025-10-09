@@ -2,12 +2,29 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, CheckCircle, Globe, Users, TrendingUp, Star } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Homepage = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const handleMakeBusinessPlan = () => {
-    navigate('/business-plan');
+  const handleMakeBusinessPlan = async () => {
+    try {
+      // Create anonymous user
+      const { data, error } = await supabase.auth.signInAnonymously();
+      
+      if (error) throw error;
+      
+      // Navigate to business plan form
+      navigate('/business-plan');
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to start. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleLogin = () => {
