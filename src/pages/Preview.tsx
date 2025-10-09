@@ -14,69 +14,84 @@ export default function Preview() {
   const [url, setUrl] = useState<string | null>(null);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
-
-  const fetchPreview = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast({
-          title: "Authentication required",
-          description: "Please log in to view your report.",
-          variant: "destructive",
-        });
-        navigate(`/login?next=/preview/${reportId}`);
-        return;
-      }
-
-      console.log('Fetching signed preview URL for:', reportId);
-
-      // Call edge function to get signed preview URL
-      const functionUrl = `https://tvznnerrgaprchburewu.supabase.co/functions/v1/get-preview-pdf?reportId=${reportId}&exp=300`;
-      const response = await fetch(functionUrl, {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        if (errorData.error === 'preview_not_found') {
-          setError('preview_not_ready');
-          return;
-        }
-        throw new Error(errorData.error || 'Failed to get preview URL');
-      }
-
-      const data = await response.json();
-      console.log('Preview URL received');
-      
-      setUrl(data.previewUrl);
-      // For download, we'll use the public URL
-      const downloadUrl = `https://tvznnerrgaprchburewu.supabase.co/storage/v1/object/public/business-plans/reports/${reportId}.pdf`;
-      setDownloadUrl(downloadUrl);
-      
-    } catch (error: any) {
-      console.error('Error fetching preview:', error);
-      setError(error.message || 'Failed to load preview');
-      toast({
-        title: "Error",
-        description: "Failed to load preview. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const [isGenerating, setIsGenerating] = useState(true);
 
   useEffect(() => {
-    if (reportId) {
-      fetchPreview();
-    }
-  }, [reportId, retryCount]);
+    if (!reportId) return;
+    
+    let mounted = true;
+    let delay = 1000;
+
+    const pollForPreview = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          toast({
+            title: "Authentication required",
+            description: "Please log in to view your report.",
+            variant: "destructive",
+          });
+          navigate(`/login?next=/preview/${reportId}`);
+          return;
+        }
+
+        console.log('Polling for preview:', reportId);
+
+        const functionUrl = `https://tvznnerrgaprchburewu.supabase.co/functions/v1/get-preview-pdf?reportId=${reportId}`;
+        const response = await fetch(functionUrl, {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        });
+
+        // Handle 202 - preview still being generated
+        if (response.status === 202) {
+          console.log('Preview not ready yet, retrying...');
+          if (!mounted) return;
+          
+          await new Promise(resolve => setTimeout(resolve, delay));
+          delay = Math.min(delay * 1.5, 5000); // Exponential backoff, max 5s
+          pollForPreview();
+          return;
+        }
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to get preview URL');
+        }
+
+        const data = await response.json();
+        console.log('Preview URL received');
+        
+        if (mounted && data.previewUrl) {
+          setUrl(data.previewUrl);
+          const downloadUrl = `https://tvznnerrgaprchburewu.supabase.co/storage/v1/object/public/business-plans/reports/${reportId}.pdf`;
+          setDownloadUrl(downloadUrl);
+          setIsGenerating(false);
+          setIsLoading(false);
+        }
+        
+      } catch (error: any) {
+        console.error('Error fetching preview:', error);
+        if (mounted) {
+          setError(error.message || 'Failed to load preview');
+          setIsGenerating(false);
+          setIsLoading(false);
+          toast({
+            title: "Error",
+            description: "Failed to load preview. Please try again.",
+            variant: "destructive",
+          });
+        }
+      }
+    };
+
+    pollForPreview();
+    
+    return () => {
+      mounted = false;
+    };
+  }, [reportId, navigate, toast]);
 
   const handleDownload = () => {
     if (!downloadUrl) {
@@ -96,36 +111,27 @@ export default function Preview() {
   };
 
   const handleRetry = () => {
-    setRetryCount(prev => prev + 1);
+    setIsLoading(true);
+    setIsGenerating(true);
+    setError(null);
+    window.location.reload();
   };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <div className="flex-1 p-6">
-        {isLoading && (
+        {isGenerating && isLoading && (
           <div className="flex flex-col items-center justify-center h-full space-y-4">
             <Loader2 className="w-16 h-16 text-primary animate-spin" />
             <h2 className="text-2xl font-semibold text-foreground">
-              Loading Preview...
-            </h2>
-            <p className="text-muted-foreground">
-              Please wait while we prepare your business plan preview.
-            </p>
-          </div>
-        )}
-
-        {error === 'preview_not_ready' && (
-          <div className="flex flex-col items-center justify-center h-full space-y-4">
-            <AlertCircle className="w-16 h-16 text-yellow-500" />
-            <h2 className="text-2xl font-semibold text-foreground">
-              Preparing Your Preview...
+              Generating your PDF...
             </h2>
             <p className="text-muted-foreground max-w-md text-center">
-              Your business plan is still being generated. This usually takes a few moments.
+              This may take up to 5 minutes. Please don't close this window.
             </p>
-            <Button onClick={handleRetry} variant="outline">
-              Retry
-            </Button>
+            <p className="text-muted-foreground text-sm">
+              Your business plan is being created in the background.
+            </p>
           </div>
         )}
 
