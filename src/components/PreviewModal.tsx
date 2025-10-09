@@ -85,7 +85,7 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
           return;
         }
 
-        if (response.status === 404) {
+        if (response.status === 404 || response.status === 202) {
           // Preview not ready yet, use exponential backoff
           // 3s, 5s, 8s, 12s, 18s, then 20s max
           const delay = Math.min(3000 * Math.pow(1.5, attempt), 20000);
