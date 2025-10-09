@@ -53,8 +53,13 @@ export default function Generating() {
         throw response.error;
       }
 
-      // Navigate to preview page
-      navigate(`/preview/${reportId}`);
+      // Ensure the response is successful before navigating
+      if (response.data?.success) {
+        // Navigate to preview page
+        navigate(`/preview/${reportId}`, { replace: true });
+      } else {
+        throw new Error('Failed to start generation');
+      }
       
     } catch (error) {
       console.error('Error starting PDF generation:', error);
@@ -94,6 +99,7 @@ export default function Generating() {
           Pricing
         </Button>
         <Button
+          type="button"
           onClick={handleViewPreview}
           disabled={isGenerating}
           className="shadow-lg"
