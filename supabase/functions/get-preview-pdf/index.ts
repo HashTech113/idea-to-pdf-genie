@@ -3,7 +3,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET,OPTIONS",
+  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
   "Access-Control-Allow-Headers": "authorization,apikey,x-client-info,content-type",
 };
 
@@ -66,14 +66,42 @@ Deno.serve(async (req) => {
             headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
           }
         );
-      } else if (error) {
-        console.log(`Path not available yet: ${path} - ${error.message}`);
       }
     }
 
-    // If none of the candidates exist yet, indicate that it's still preparing
+    // Try directory search in previews folder
+    const { data: fileList, error: listError } = await supabase.storage
+      .from("business-plans")
+      .list("previews", { search: reportId });
+
+    if (fileList && fileList.length > 0) {
+      // Prefer -preview2.pdf if available
+      const preview2 = fileList.find(f => f.name.includes(`${reportId}-preview2.pdf`));
+      const previewFile = preview2 || fileList.find(f => f.name.endsWith('.pdf'));
+      
+      if (previewFile) {
+        const filePath = `previews/${previewFile.name}`;
+        const { data, error } = await supabase.storage
+          .from("business-plans")
+          .createSignedUrl(filePath, 300);
+
+        if (data?.signedUrl) {
+          console.log(`Found preview via search: ${filePath}`);
+          return new Response(
+            JSON.stringify({ previewUrl: data.signedUrl, path: filePath }),
+            {
+              status: 200,
+              headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+            }
+          );
+        }
+      }
+    }
+
+    // If none found, return 200 with preparing status for graceful polling
+    console.log(`No preview found yet for reportId: ${reportId}`);
     return new Response(JSON.stringify({ status: "preparing" }), {
-      status: 202,
+      status: 200,
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
   } catch (error) {

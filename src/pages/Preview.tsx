@@ -50,50 +50,87 @@ export default function Preview() {
 
         console.log(`Polling for preview (attempt ${attempts}/${maxAttempts}):`, reportId);
 
-        const { data, error } = await supabase.functions.invoke('get-preview-pdf', {
-          body: { reportId },
-        });
+        // Use direct fetch for consistent handling
+        const response = await fetch(
+          `https://tvznnerrgaprchburewu.supabase.co/functions/v1/get-preview-pdf?reportId=${reportId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+              'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2em5uZXJyZ2FwcmNoYnVyZXd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3OTAxNzUsImV4cCI6MjA3NDM2NjE3NX0._vuf_ZB8i-_GFDz2vIc_6y_6FzjeEkGTOKz90sxiEnY',
+            },
+          }
+        );
 
-        if (error) {
-          throw error;
+        // Handle non-OK responses gracefully
+        if (response.status === 404 || response.status === 202) {
+          console.log('Preview not ready yet (404/202), retrying...');
+          if (!mounted) return;
+          
+          await new Promise(resolve => setTimeout(resolve, delay));
+          delay = Math.min(delay * 1.2, 5000);
+          pollForPreview();
+          return;
         }
 
-        // Handle 202 - preview still being generated
+        // Try to parse JSON, handle gracefully if it fails
+        let data;
+        try {
+          data = await response.json();
+        } catch (jsonError) {
+          console.log('JSON parse error (transient), retrying...');
+          if (!mounted) return;
+          
+          await new Promise(resolve => setTimeout(resolve, delay));
+          delay = Math.min(delay * 1.2, 5000);
+          pollForPreview();
+          return;
+        }
+
+        // Handle "preparing" status
         if (data?.status === 'preparing') {
           console.log('Preview not ready yet, retrying...');
           if (!mounted) return;
           
           await new Promise(resolve => setTimeout(resolve, delay));
-          delay = Math.min(delay * 1.2, 5000); // Slower exponential backoff, max 5s
+          delay = Math.min(delay * 1.2, 5000);
           pollForPreview();
           return;
         }
 
+        // Success case
         if (data?.previewUrl) {
-          console.log('Preview URL received');
+          console.log('Preview URL received:', data.path);
           
           if (mounted) {
             setUrl(data.previewUrl);
-            const downloadUrl = `https://tvznnerrgaprchburewu.supabase.co/storage/v1/object/public/business-plans/reports/${reportId}.pdf`;
-            setDownloadUrl(downloadUrl);
+            setDownloadUrl(data.previewUrl); // Use the same signed URL for download
             setIsGenerating(false);
             setIsLoading(false);
           }
-        } else {
-          throw new Error('No preview URL received');
+        } else if (!response.ok) {
+          // Only treat as error if response is not OK and we have no previewUrl
+          throw new Error(data?.error || 'Failed to load preview');
         }
         
       } catch (error: any) {
-        console.error('Error fetching preview:', error);
+        console.error('Error polling for preview:', error);
         if (mounted) {
-          setError(error.message || 'Failed to load preview');
-          setIsGenerating(false);
-          setIsLoading(false);
-          toast({
-            title: "Error",
-            description: "Failed to load preview. Please try again.",
-            variant: "destructive",
-          });
+          // Only show error for true, non-recoverable errors
+          if (error.message?.includes('Authentication') || error.message?.includes('network')) {
+            setError(error.message || 'Failed to load preview');
+            setIsGenerating(false);
+            setIsLoading(false);
+            toast({
+              title: "Error",
+              description: error.message || "Failed to load preview. Please try again.",
+              variant: "destructive",
+            });
+          } else {
+            // For other errors, just retry
+            await new Promise(resolve => setTimeout(resolve, delay));
+            delay = Math.min(delay * 1.2, 5000);
+            pollForPreview();
+          }
         }
       }
     };
@@ -187,13 +224,14 @@ export default function Preview() {
         >
           Pricing
         </Button>
-        <Button
-          onClick={handleDownload}
-          disabled={!downloadUrl}
-          className="shadow-lg"
-        >
-          Download PDF
-        </Button>
+        {downloadUrl && (
+          <Button
+            onClick={handleDownload}
+            className="shadow-lg"
+          >
+            Download PDF
+          </Button>
+        )}
       </div>
     </div>
   );
