@@ -20,10 +20,23 @@ export default function Preview() {
     if (!reportId) return;
     
     let mounted = true;
-    let delay = 1000;
+    let delay = 2000;
+    let attempts = 0;
+    const maxAttempts = 60; // 60 attempts with exponential backoff = ~5 minutes
 
     const pollForPreview = async () => {
       try {
+        attempts++;
+        
+        if (attempts > maxAttempts) {
+          if (mounted) {
+            setError('PDF generation is taking longer than expected. Please try again later.');
+            setIsGenerating(false);
+            setIsLoading(false);
+          }
+          return;
+        }
+
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
           toast({
@@ -35,40 +48,39 @@ export default function Preview() {
           return;
         }
 
-        console.log('Polling for preview:', reportId);
+        console.log(`Polling for preview (attempt ${attempts}/${maxAttempts}):`, reportId);
 
-        const functionUrl = `https://tvznnerrgaprchburewu.supabase.co/functions/v1/get-preview-pdf?reportId=${reportId}`;
-        const response = await fetch(functionUrl, {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
+        const { data, error } = await supabase.functions.invoke('get-preview-pdf', {
+          body: { reportId },
         });
 
+        if (error) {
+          throw error;
+        }
+
         // Handle 202 - preview still being generated
-        if (response.status === 202) {
+        if (data?.status === 'preparing') {
           console.log('Preview not ready yet, retrying...');
           if (!mounted) return;
           
           await new Promise(resolve => setTimeout(resolve, delay));
-          delay = Math.min(delay * 1.5, 5000); // Exponential backoff, max 5s
+          delay = Math.min(delay * 1.2, 5000); // Slower exponential backoff, max 5s
           pollForPreview();
           return;
         }
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to get preview URL');
-        }
-
-        const data = await response.json();
-        console.log('Preview URL received');
-        
-        if (mounted && data.previewUrl) {
-          setUrl(data.previewUrl);
-          const downloadUrl = `https://tvznnerrgaprchburewu.supabase.co/storage/v1/object/public/business-plans/reports/${reportId}.pdf`;
-          setDownloadUrl(downloadUrl);
-          setIsGenerating(false);
-          setIsLoading(false);
+        if (data?.previewUrl) {
+          console.log('Preview URL received');
+          
+          if (mounted) {
+            setUrl(data.previewUrl);
+            const downloadUrl = `https://tvznnerrgaprchburewu.supabase.co/storage/v1/object/public/business-plans/reports/${reportId}.pdf`;
+            setDownloadUrl(downloadUrl);
+            setIsGenerating(false);
+            setIsLoading(false);
+          }
+        } else {
+          throw new Error('No preview URL received');
         }
         
       } catch (error: any) {
