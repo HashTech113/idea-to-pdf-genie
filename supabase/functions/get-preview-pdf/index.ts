@@ -13,7 +13,24 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { reportId } = await req.json();
+    let reportId: string | null = null;
+
+    // Try to get reportId from JSON body first
+    try {
+      const contentType = req.headers.get("content-type");
+      if (contentType?.includes("application/json")) {
+        const body = await req.json();
+        reportId = body.reportId;
+      }
+    } catch {
+      // If JSON parsing fails, try query params
+    }
+
+    // Fallback to query params if not found in body
+    if (!reportId) {
+      const url = new URL(req.url);
+      reportId = url.searchParams.get("reportId");
+    }
     
     if (!reportId) {
       return new Response(JSON.stringify({ error: "Missing reportId" }), {
