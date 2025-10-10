@@ -75,25 +75,40 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
         const response = await fetch(functionUrl, {
           headers: {
             Authorization: `Bearer ${currentSession.access_token}`,
+            apikey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2em5uZXJyZ2FwcmNoYnVyZXd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3OTAxNzUsImV4cCI6MjA3NDM2NjE3NX0._vuf_ZB8i-_GFDz2vIc_6y_6FzjeEkGTOKz90sxiEnY',
           },
         });
 
-        if (response.ok) {
-          const data = await response.json();
+        let data: any = null;
+        try {
+          data = await response.json();
+        } catch {
+          // if JSON parsing fails, continue polling with backoff
+          const delay = Math.min(3000 * Math.pow(1.5, attempt), 20000);
+          setTimeout(() => poll(attempt + 1), delay);
+          return;
+        }
+
+        // Handle non-OK responses first
+        if (!response.ok) {
+          if (response.status === 404 || response.status === 202) {
+            const delay = Math.min(3000 * Math.pow(1.5, attempt), 20000);
+            setTimeout(() => poll(attempt + 1), delay);
+            return;
+          }
+          throw new Error(data?.error || 'Failed to fetch preview');
+        }
+
+        // OK response: only stop when we actually have a previewUrl
+        if (data?.previewUrl) {
           setPreviewUrl(data.previewUrl);
           setIsGenerating(false);
           return;
         }
 
-        if (response.status === 404 || response.status === 202) {
-          // Preview not ready yet, use exponential backoff
-          // 3s, 5s, 8s, 12s, 18s, then 20s max
-          const delay = Math.min(3000 * Math.pow(1.5, attempt), 20000);
-          setTimeout(() => poll(attempt + 1), delay);
-        } else {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to fetch preview');
-        }
+        // If still preparing or previewUrl missing, keep polling with backoff
+        const delay = Math.min(3000 * Math.pow(1.5, attempt), 20000);
+        setTimeout(() => poll(attempt + 1), delay);
       } catch (err: any) {
         console.error('Error polling for preview:', err);
         // Only set error if it's not a preview_not_found error (which means we should keep polling)
