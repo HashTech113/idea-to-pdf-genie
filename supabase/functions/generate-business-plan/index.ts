@@ -61,13 +61,17 @@ serve(async (req) => {
       console.error('Error updating job status:', updateError);
     }
 
-    // Trigger n8n webhook as a background task
+    // Trigger n8n webhook as a fire-and-forget background task
+    // n8n will call back to update-pdf-status when done
     const webhookTask = async () => {
       try {
         const n8nUrl = 'https://hashirceo.app.n8n.cloud/webhook-test/2fcbe92b-1cd7-4ac9-987f-34dbaa1dc93f';
         
         console.log('Calling n8n webhook for reportId:', reportId);
         console.log('Webhook payload:', { userId, reportId, formDataKeys: Object.keys(formData) });
+        
+        // Include callback URL for n8n to call when done
+        const callbackUrl = `${supabaseUrl}/functions/v1/update-pdf-status`;
         
         const response = await fetch(n8nUrl, {
           method: 'POST',
@@ -78,98 +82,41 @@ serve(async (req) => {
             userId, 
             reportId, 
             formData,
+            callbackUrl,
             supabaseUrl: supabaseUrl,
             supabaseKey: supabaseKey 
           }),
-          signal: AbortSignal.timeout(180000), // 3 minute timeout for PDF generation
+          signal: AbortSignal.timeout(10000), // 10 second timeout just to trigger the webhook
         });
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error('n8n webhook failed:', response.status, errorText);
+          console.error('n8n webhook trigger failed:', response.status, errorText);
           
-          // Update job status to failed
+          // Update job status to failed only if we couldn't trigger the webhook
           await supabase
             .from('jobs')
             .update({ 
               status: 'failed',
-              error_message: `Webhook failed: ${response.status} - ${errorText.substring(0, 200)}`
+              error_message: `Failed to trigger n8n workflow: ${response.status}`
             })
             .eq('report_id', reportId);
         } else {
-          console.log('n8n webhook succeeded for reportId:', reportId);
-          
-          // Parse webhook response to get PDF URL
-          const webhookData = await response.json();
-          console.log('Full webhook response:', JSON.stringify(webhookData, null, 2));
-          
-          // Extract PDF URL from response - try multiple common field names
-          const pdfUrl = webhookData.pdfUrl || 
-                        webhookData.pdf_url || 
-                        webhookData.url || 
-                        webhookData.previewPdfUrl || 
-                        webhookData.preview_pdf_url ||
-                        webhookData.fullPdfUrl ||
-                        webhookData.full_pdf_url;
-          
-          console.log('Extracted PDF URL:', pdfUrl);
-          
-          if (pdfUrl) {
-            // Update job with the PDF URL (same URL for both preview and full for now)
-            const updateResult = await supabase
-              .from('jobs')
-              .update({ 
-                status: 'completed',
-                preview_pdf_path: pdfUrl,
-                full_pdf_path: pdfUrl,
-                completed_at: new Date().toISOString()
-              })
-              .eq('report_id', reportId);
-            
-            if (updateResult.error) {
-              console.error('Error updating job with PDF URL:', updateResult.error);
-            } else {
-              console.log('Job successfully updated with PDF URL:', pdfUrl);
-            }
-          } else {
-            console.error('No PDF URL found in webhook response.');
-            console.error('Available fields:', Object.keys(webhookData).join(', '));
-            console.error('Full response:', JSON.stringify(webhookData));
-            await supabase
-              .from('jobs')
-              .update({ 
-                status: 'failed',
-                error_message: `No PDF URL in webhook response. Available fields: ${Object.keys(webhookData).join(', ')}`
-              })
-              .eq('report_id', reportId);
-          }
+          console.log('n8n webhook triggered successfully for reportId:', reportId);
+          console.log('Waiting for n8n to call back with PDF URL...');
+          // Job stays in 'processing' status until n8n calls back
         }
       } catch (error) {
-        console.error('Error calling n8n webhook:', error);
+        console.error('Error triggering n8n webhook:', error);
         console.error('Error details:', error.message, error.stack);
         
-        // Check if it's a timeout error
-        const isTimeout = error.message?.includes('timed out') || error.message?.includes('TimeoutError') || error.name === 'TimeoutError';
-        
-        if (isTimeout) {
-          console.log('Webhook timed out after 180s. PDF generation may still be processing.');
-          await supabase
-            .from('jobs')
-            .update({ 
-              status: 'failed',
-              error_message: 'PDF generation timed out after 3 minutes. Please try again or contact support.'
-            })
-            .eq('report_id', reportId);
-        } else {
-          // Update job status to failed for other errors
-          await supabase
-            .from('jobs')
-            .update({ 
-              status: 'failed',
-              error_message: `Webhook error: ${error.message || 'Unknown error occurred'}`
-            })
-            .eq('report_id', reportId);
-        }
+        await supabase
+          .from('jobs')
+          .update({ 
+            status: 'failed',
+            error_message: `Failed to trigger n8n: ${error.message || 'Unknown error'}`
+          })
+          .eq('report_id', reportId);
       }
     };
 

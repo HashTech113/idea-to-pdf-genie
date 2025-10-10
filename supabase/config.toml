@@ -63,3 +63,6 @@ verify_jwt = false
 
 [functions.get-preview-pdf]
 verify_jwt = false
+
+[functions.update-pdf-status]
+verify_jwt = false
