@@ -128,9 +128,9 @@ export default function Preview() {
         }
 
         if (job.status === 'completed' && job.pdf_path) {
-          // Job is complete, now fetch the PDF based on user plan
-          console.log('Job completed, fetching PDF based on user plan...');
-          fetchReportByPlan();
+          // Job is complete, fetch the PDF URL from job record
+          console.log('Job completed, fetching PDF URL from job...');
+          fetchReportFromJob();
           return;
         }
 
@@ -159,111 +159,59 @@ export default function Preview() {
       }
     };
 
-    const fetchReportByPlan = async () => {
+    const fetchReportFromJob = async () => {
       if (url) {
         console.log('Report URL already set, skipping fetch');
         return;
       }
       
-      let attempts = 0;
-      const maxAttempts = 60;
-      let delay = 2000;
-
-      const fetch = async () => {
-        if (url) {
-          console.log('Report URL found, stopping fetch');
-          setIsPdfPollingActive(false);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          navigate(`/login?next=/preview/${reportId}`);
           return;
         }
-        
-        try {
-          attempts++;
-          
-          if (attempts > maxAttempts) {
-            if (mounted) {
-              setError('PDF is taking longer than expected. Please try refreshing the page.');
-              setIsGenerating(false);
-              setIsLoading(false);
-              setIsPdfPollingActive(false);
-            }
-            return;
-          }
 
-          const { data: { session } } = await supabase.auth.getSession();
-          if (!session) {
-            navigate(`/login?next=/preview/${reportId}`);
-            return;
-          }
+        // Get user plan
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('plan')
+          .eq('user_id', session.user.id)
+          .single();
 
-          // Get user plan first
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('plan')
-            .eq('user_id', session.user.id)
-            .single();
-
-          const plan = profile?.plan || 'free';
-          if (mounted) {
-            setUserPlan(plan);
-          }
-
-          console.log(`Fetching report for ${plan} user (attempt ${attempts}/${maxAttempts})...`);
-
-          const response = await supabase.functions.invoke('get-report', {
-            body: { reportId },
-          });
-
-          if (response.error) {
-            // Check for preview_not_ready error
-            if (response.error.message?.includes('preview_not_ready')) {
-              console.log('Preview not ready yet, retrying...');
-              if (!mounted) return;
-              
-              delay = Math.min(delay * 1.1, 5000);
-              await new Promise(resolve => setTimeout(resolve, delay));
-              fetch();
-              return;
-            }
-            throw response.error;
-          }
-
-          if (response.data?.url) {
-            console.log('Report URL received, type:', response.data.type);
-            
-            if (mounted) {
-              setUrl(response.data.url);
-              setDownloadUrl(response.data.downloadUrl || null);
-              setReportType(response.data.type || 'preview');
-              setIsGenerating(false);
-              setIsLoading(false);
-              setIsPdfPollingActive(false);
-              toast({
-                title: response.data.type === 'full' ? "Full Report Ready!" : "Preview Ready!",
-                description: response.data.type === 'full' 
-                  ? "Your complete business plan is now available." 
-                  : "Your 2-page preview is ready. Upgrade to download the full plan.",
-              });
-            }
-          } else {
-            // No URL yet, keep polling
-            if (!mounted) return;
-            
-            delay = Math.min(delay * 1.1, 5000);
-            await new Promise(resolve => setTimeout(resolve, delay));
-            fetch();
-          }
-          
-        } catch (error: any) {
-          console.error('Error fetching report:', error);
-          if (!mounted) return;
-          
-          delay = Math.min(delay * 1.1, 5000);
-          await new Promise(resolve => setTimeout(resolve, delay));
-          fetch();
+        const plan = profile?.plan || 'free';
+        if (mounted) {
+          setUserPlan(plan);
         }
-      };
 
-      fetch();
+        // Get PDF URL from job record
+        const { data: job } = await supabase
+          .from('jobs')
+          .select('pdf_path')
+          .eq('report_id', reportId)
+          .single();
+
+        if (job?.pdf_path) {
+          console.log('PDF URL from job:', job.pdf_path);
+          
+          if (mounted) {
+            setUrl(job.pdf_path);
+            setDownloadUrl(plan !== 'free' ? job.pdf_path : null);
+            setReportType(plan === 'free' ? 'preview' : 'full');
+            setIsGenerating(false);
+            setIsLoading(false);
+            setIsPdfPollingActive(false);
+            toast({
+              title: plan === 'free' ? "Preview Ready!" : "Full Report Ready!",
+              description: plan === 'free' 
+                ? "Your 2-page preview is ready. Upgrade to download the full plan." 
+                : "Your complete business plan is now available.",
+            });
+          }
+        }
+      } catch (error: any) {
+        console.error('Error fetching report from job:', error);
+      }
     };
 
     pollForJobStatus();
@@ -278,9 +226,6 @@ export default function Preview() {
     if (!isPdfPollingActive || url || !reportId) return;
     
     let mounted = true;
-    let attempts = 0;
-    const maxAttempts = 60;
-    let delay = 2000;
 
     const fetchReportParallel = async () => {
       if (url) {
@@ -288,101 +233,51 @@ export default function Preview() {
         setIsPdfPollingActive(false);
         return;
       }
-      
-      const fetch = async () => {
-        if (url) {
-          console.log('[Parallel] Report URL found by another fetch, stopping');
+
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session || !mounted) return;
+
+        // Get user plan
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('plan')
+          .eq('user_id', session.user.id)
+          .single();
+
+        const plan = profile?.plan || 'free';
+        if (mounted) {
+          setUserPlan(plan);
+        }
+
+        console.log(`[Parallel] Checking for PDF URL in job for ${plan} user...`);
+
+        // Get PDF URL from job record
+        const { data: job } = await supabase
+          .from('jobs')
+          .select('pdf_path')
+          .eq('report_id', reportId)
+          .single();
+
+        if (job?.pdf_path && mounted) {
+          console.log('[Parallel] PDF URL found in job:', job.pdf_path);
+          
+          setUrl(job.pdf_path);
+          setDownloadUrl(plan !== 'free' ? job.pdf_path : null);
+          setReportType(plan === 'free' ? 'preview' : 'full');
+          setIsGenerating(false);
+          setIsLoading(false);
           setIsPdfPollingActive(false);
-          return;
-        }
-        
-        try {
-          attempts++;
-          
-          if (attempts > maxAttempts) {
-            if (mounted) {
-              setError('PDF is taking longer than expected. Please try refreshing the page.');
-              setIsGenerating(false);
-              setIsLoading(false);
-              setIsPdfPollingActive(false);
-            }
-            return;
-          }
-
-          const { data: { session } } = await supabase.auth.getSession();
-          if (!session) {
-            navigate(`/login?next=/preview/${reportId}`);
-            return;
-          }
-
-          // Get user plan
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('plan')
-            .eq('user_id', session.user.id)
-            .single();
-
-          const plan = profile?.plan || 'free';
-          if (mounted) {
-            setUserPlan(plan);
-          }
-
-          console.log(`[Parallel] Fetching report for ${plan} user (attempt ${attempts}/${maxAttempts})...`);
-
-          const response = await supabase.functions.invoke('get-report', {
-            body: { reportId },
+          toast({
+            title: plan === 'free' ? "Preview Ready!" : "Full Report Ready!",
+            description: plan === 'free' 
+              ? "Your 2-page preview is ready. Upgrade to download the full plan." 
+              : "Your complete business plan is now available.",
           });
-
-          if (response.error) {
-            if (response.error.message?.includes('preview_not_ready')) {
-              console.log('[Parallel] Preview not ready yet, retrying...');
-              if (!mounted) return;
-              
-              delay = Math.min(delay * 1.1, 5000);
-              await new Promise(resolve => setTimeout(resolve, delay));
-              fetch();
-              return;
-            }
-            throw response.error;
-          }
-
-          if (response.data?.url) {
-            console.log('[Parallel] Report URL received, type:', response.data.type);
-            
-            if (mounted) {
-              setUrl(response.data.url);
-              setDownloadUrl(response.data.downloadUrl || null);
-              setReportType(response.data.type || 'preview');
-              setIsGenerating(false);
-              setIsLoading(false);
-              setIsPdfPollingActive(false);
-              toast({
-                title: response.data.type === 'full' ? "Full Report Ready!" : "Preview Ready!",
-                description: response.data.type === 'full' 
-                  ? "Your complete business plan is now available." 
-                  : "Your 2-page preview is ready. Upgrade to download the full plan.",
-              });
-            }
-            return;
-          }
-
-          if (!mounted) return;
-          
-          delay = Math.min(delay * 1.1, 5000);
-          await new Promise(resolve => setTimeout(resolve, delay));
-          fetch();
-          
-        } catch (error: any) {
-          console.error('[Parallel] Error fetching report:', error);
-          if (!mounted) return;
-          
-          delay = Math.min(delay * 1.1, 5000);
-          await new Promise(resolve => setTimeout(resolve, delay));
-          fetch();
         }
-      };
-
-      fetch();
+      } catch (error: any) {
+        console.error('[Parallel] Error fetching report from job:', error);
+      }
     };
 
     fetchReportParallel();
