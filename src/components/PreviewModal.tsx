@@ -214,20 +214,20 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
           )}
 
           {previewUrl && !isGenerating && (
-            <div className="w-full h-full flex flex-col gap-2">
-              <iframe
-                title="Business Plan Preview"
-                src={previewUrl}
-                className="w-full h-full border-0 rounded-lg shadow-lg"
-                loading="lazy"
-              />
+            <div className="text-center space-y-4">
+              <h3 className="text-xl font-semibold text-foreground">
+                Preview Generated Successfully
+              </h3>
+              <p className="text-muted-foreground max-w-md">
+                Your business plan preview is ready.
+              </p>
               <a 
                 href={previewUrl} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-xs text-center text-primary hover:underline"
+                className="inline-block text-primary hover:underline"
               >
-                Open in new tab
+                Open PDF in new tab
               </a>
             </div>
           )}

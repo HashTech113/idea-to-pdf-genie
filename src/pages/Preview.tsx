@@ -351,23 +351,27 @@ export default function Preview() {
         )}
 
         {url && !isLoading && !error && (
-          <div className="w-full h-full">
-            <div className="flex items-center justify-between mb-4">
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="text-center space-y-6">
               <h1 className="text-3xl font-bold text-foreground">
-                {reportType === 'full' ? 'Business Plan' : 'Business Plan Preview (First 2 Pages)'}
+                {reportType === 'full' ? 'Business Plan Ready' : 'Business Plan Preview Ready'}
               </h1>
               {userPlan === 'free' && reportType === 'preview' && (
                 <span className="text-sm text-muted-foreground bg-secondary px-3 py-1 rounded-full">
-                  Free Plan - Preview Only
+                  Free Plan - Preview Only (First 2 Pages)
                 </span>
               )}
-            </div>
-            <div className="h-[80vh] w-full rounded-xl overflow-hidden border">
-              <iframe
-                title="Your PDF"
-                src={url}
-                className="w-full h-full border-0"
-              />
+              <p className="text-muted-foreground max-w-md">
+                Your business plan has been generated successfully.
+              </p>
+              <a 
+                href={url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-block text-lg text-primary hover:underline font-semibold"
+              >
+                Open PDF in new tab
+              </a>
             </div>
           </div>
         )}
