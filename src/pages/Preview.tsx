@@ -275,15 +275,136 @@ export default function Preview() {
 
     pollForJobStatus();
     
-    // Also start PDF polling if triggered by the parallel polling effect
-    if (isPdfPollingActive && !url) {
-      pollForPdfPreview();
-    }
-    
     return () => {
       mounted = false;
     };
   }, [reportId, navigate, toast]);
+
+  // Separate effect for parallel PDF polling
+  useEffect(() => {
+    if (!isPdfPollingActive || url || !reportId) return;
+    
+    let mounted = true;
+    let pdfAttempts = 0;
+    const maxPdfAttempts = 60;
+    let pdfDelay = 2000;
+
+    const pollForPdfPreview = async () => {
+      if (url) {
+        console.log('Preview URL found by another poller, stopping');
+        setIsPdfPollingActive(false);
+        return;
+      }
+      
+      const poll = async () => {
+        if (url) {
+          console.log('Preview URL found, stopping parallel polling');
+          setIsPdfPollingActive(false);
+          return;
+        }
+        
+        try {
+          pdfAttempts++;
+          
+          if (pdfAttempts > maxPdfAttempts) {
+            if (mounted) {
+              setError('PDF preview is taking longer than expected. Please try refreshing the page.');
+              setIsGenerating(false);
+              setIsLoading(false);
+              setIsPdfPollingActive(false);
+            }
+            return;
+          }
+
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) {
+            navigate(`/login?next=/preview/${reportId}`);
+            return;
+          }
+
+          console.log(`[Parallel] Polling for PDF file (attempt ${pdfAttempts}/${maxPdfAttempts})...`);
+
+          const response = await fetch(
+            `https://tvznnerrgaprchburewu.supabase.co/functions/v1/get-preview-pdf?reportId=${reportId}`,
+            {
+              headers: {
+                'Authorization': `Bearer ${session.access_token}`,
+                'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2em5uZXJyZ2FwcmNoYnVyZXd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3OTAxNzUsImV4cCI6MjA3NDM2NjE3NX0._vuf_ZB8i-_GFDz2vIc_6y_6FzjeEkGTOKz90sxiEnY',
+              },
+            }
+          );
+
+          let data;
+          try {
+            data = await response.json();
+          } catch (jsonError) {
+            console.log('[Parallel] JSON parse error, retrying...');
+            if (!mounted) return;
+            
+            await new Promise(resolve => setTimeout(resolve, pdfDelay));
+            poll();
+            return;
+          }
+
+          if (data?.status === 'preparing') {
+            console.log('[Parallel] PDF still preparing, retrying...');
+            if (!mounted) return;
+            
+            pdfDelay = Math.min(pdfDelay * 1.1, 5000);
+            await new Promise(resolve => setTimeout(resolve, pdfDelay));
+            poll();
+            return;
+          }
+
+          if (data?.previewUrl) {
+            console.log('[Parallel] Preview URL received:', data.path);
+            
+            if (mounted) {
+              setUrl(data.previewUrl);
+              setDownloadUrl(data.previewUrl);
+              setIsGenerating(false);
+              setIsLoading(false);
+              setIsPdfPollingActive(false);
+              toast({
+                title: "Preview ready!",
+                description: "Your business plan preview is now available.",
+              });
+            }
+            return;
+          }
+
+          if (response.status === 404 || response.status === 202) {
+            console.log('[Parallel] PDF file not ready yet, retrying...');
+            if (!mounted) return;
+            
+            pdfDelay = Math.min(pdfDelay * 1.1, 5000);
+            await new Promise(resolve => setTimeout(resolve, pdfDelay));
+            poll();
+            return;
+          }
+
+          if (!response.ok) {
+            throw new Error(data?.error || 'Failed to load preview');
+          }
+          
+        } catch (error: any) {
+          console.error('[Parallel] Error polling for PDF:', error);
+          if (!mounted) return;
+          
+          await new Promise(resolve => setTimeout(resolve, pdfDelay));
+          poll();
+        }
+      };
+
+      poll();
+    };
+
+    pollForPdfPreview();
+    
+    return () => {
+      mounted = false;
+    };
+  }, [isPdfPollingActive, reportId, url, navigate, toast]);
 
   const handleDownload = () => {
     if (!downloadUrl) {

@@ -29,7 +29,7 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
   };
 
   const pollForPreview = async (id: string, startTime: number = Date.now()) => {
-    const maxPollingTime = 300000; // 5 minutes
+    const maxPollingTime = 600000; // 10 minutes (increased for reliability)
     
     const poll = async (attempt: number) => {
       const elapsedTime = Date.now() - startTime;
