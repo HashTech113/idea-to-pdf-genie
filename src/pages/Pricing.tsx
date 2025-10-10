@@ -80,7 +80,7 @@ const Pricing = () => {
               
               <Button 
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 text-lg font-semibold"
-                onClick={() => window.location.href = 'YOUR_CHECKOUT_URL'}
+                onClick={() => window.location.href = 'https://rzp.io/rzp/TqlDyDU'}
               >
                 Subscribe now →
               </Button>
