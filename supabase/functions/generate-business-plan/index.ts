@@ -110,13 +110,19 @@ serve(async (req) => {
         console.error('Error triggering n8n webhook:', error);
         console.error('Error details:', error.message, error.stack);
         
-        await supabase
-          .from('jobs')
-          .update({ 
-            status: 'failed',
-            error_message: `Failed to trigger n8n: ${error.message || 'Unknown error'}`
-          })
-          .eq('report_id', reportId);
+        // Only mark as failed if it's NOT a timeout error
+        // Timeouts are expected when using the callback pattern
+        if (!(error instanceof DOMException && error.name === 'TimeoutError')) {
+          await supabase
+            .from('jobs')
+            .update({ 
+              status: 'failed',
+              error_message: `Failed to trigger n8n: ${error.message || 'Unknown error'}`
+            })
+            .eq('report_id', reportId);
+        } else {
+          console.log('Timeout while triggering webhook (expected) - job remains in processing state');
+        }
       }
     };
 

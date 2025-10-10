@@ -184,7 +184,7 @@ export default function Preview() {
           setUserPlan(plan);
         }
 
-        // Get PDF URL from job record
+        // Get PDF URL directly from job record (n8n webhook provides public URLs)
         const { data: job } = await supabase
           .from('jobs')
           .select('preview_pdf_path, full_pdf_path')
@@ -193,8 +193,9 @@ export default function Preview() {
 
         if (job) {
           // Use preview_pdf_path for free users, full_pdf_path for paid users
+          // These are public URLs from n8n, can be used directly in iframe
           const pdfUrl = plan === 'free' ? job.preview_pdf_path : (job.full_pdf_path || job.preview_pdf_path);
-          console.log('Displaying PDF URL:', pdfUrl, 'for plan:', plan);
+          console.log('Using direct public PDF URL:', pdfUrl, 'for plan:', plan);
           
           if (pdfUrl && mounted) {
             setUrl(pdfUrl);
@@ -256,7 +257,7 @@ export default function Preview() {
 
         console.log(`[Parallel] Checking for PDF URL in job for ${plan} user...`);
 
-        // Get PDF URL from job record
+        // Get PDF URL directly from job record (n8n webhook provides public URLs)
         const { data: job } = await supabase
           .from('jobs')
           .select('preview_pdf_path, full_pdf_path')
@@ -265,7 +266,7 @@ export default function Preview() {
 
         if (job && mounted) {
           const pdfUrl = plan === 'free' ? job.preview_pdf_path : (job.full_pdf_path || job.preview_pdf_path);
-          console.log('[Parallel] Displaying PDF URL:', pdfUrl, 'for plan:', plan);
+          console.log('[Parallel] Using direct public PDF URL:', pdfUrl, 'for plan:', plan);
           
           if (pdfUrl) {
             setUrl(pdfUrl);

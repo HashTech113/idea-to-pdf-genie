@@ -55,14 +55,5 @@ enable_confirmations = false
 [functions.generate-business-plan]
 verify_jwt = false
 
-[functions.get-report]
-verify_jwt = false
-
-[functions.sign-report]
-verify_jwt = false
-
-[functions.get-preview-pdf]
-verify_jwt = false
-
 [functions.update-pdf-status]
 verify_jwt = false

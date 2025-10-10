@@ -29,14 +29,13 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
   };
 
   const pollForPreview = async (id: string, startTime: number = Date.now()) => {
-    const maxPollingTime = 600000; // 10 minutes (increased for reliability)
+    const maxPollingTime = 600000; // 10 minutes
     
     const poll = async (attempt: number) => {
       const elapsedTime = Date.now() - startTime;
       
-      // Check if we've exceeded max polling time
       if (elapsedTime > maxPollingTime) {
-        setError('PDF generation is taking longer than expected. Please check back in a few minutes or contact support.');
+        setError('PDF generation is taking longer than expected. Please check back in a few minutes.');
         setIsGenerating(false);
         return;
       }
@@ -44,7 +43,6 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
       setPollingAttempts(attempt);
 
       try {
-        // Get fresh session each time to avoid token expiration
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         
         if (!currentSession) {
@@ -53,73 +51,34 @@ export const PreviewModal = ({ open, onClose, formData }: PreviewModalProps) => 
           return;
         }
 
-        // Check job status in database
-        const { data: jobData } = await (supabase as any)
+        // Get PDF URL directly from job record (n8n webhook provides public URLs)
+        const { data: jobData } = await supabase
           .from('jobs')
-          .select('status, error_message')
+          .select('status, error_message, preview_pdf_path')
           .eq('report_id', id)
           .maybeSingle();
 
-        if ((jobData as any)?.status === 'failed') {
-          const errorMsg = (jobData as any)?.error_message || '';
-          // If it's a timeout error, continue polling as the job may still be processing
-          if (!/timed out/i.test(errorMsg)) {
-            setError(`PDF generation failed: ${errorMsg || 'Unknown error'}`);
-            setIsGenerating(false);
-            return;
-          }
-        }
-
-        // Call edge function to get signed URL for preview
-        const functionUrl = `https://tvznnerrgaprchburewu.supabase.co/functions/v1/get-preview-pdf?reportId=${id}&exp=300`;
-        const response = await fetch(functionUrl, {
-          headers: {
-            Authorization: `Bearer ${currentSession.access_token}`,
-            apikey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2em5uZXJyZ2FwcmNoYnVyZXd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3OTAxNzUsImV4cCI6MjA3NDM2NjE3NX0._vuf_ZB8i-_GFDz2vIc_6y_6FzjeEkGTOKz90sxiEnY',
-          },
-        });
-
-        let data: any = null;
-        try {
-          data = await response.json();
-        } catch {
-          // if JSON parsing fails, continue polling with backoff
-          const delay = Math.min(3000 * Math.pow(1.5, attempt), 20000);
-          setTimeout(() => poll(attempt + 1), delay);
-          return;
-        }
-
-        // Handle non-OK responses first
-        if (!response.ok) {
-          if (response.status === 404 || response.status === 202) {
-            const delay = Math.min(3000 * Math.pow(1.5, attempt), 20000);
-            setTimeout(() => poll(attempt + 1), delay);
-            return;
-          }
-          throw new Error(data?.error || 'Failed to fetch preview');
-        }
-
-        // OK response: only stop when we actually have a previewUrl
-        if (data?.previewUrl) {
-          setPreviewUrl(data.previewUrl);
+        if (jobData?.status === 'failed') {
+          setError(`PDF generation failed: ${jobData.error_message || 'Unknown error'}`);
           setIsGenerating(false);
           return;
         }
 
-        // If still preparing or previewUrl missing, keep polling with backoff
+        // If preview URL is available, use it directly (no signing needed - it's public)
+        if (jobData?.preview_pdf_path) {
+          console.log('Using direct public preview URL:', jobData.preview_pdf_path);
+          setPreviewUrl(jobData.preview_pdf_path);
+          setIsGenerating(false);
+          return;
+        }
+
+        // Still processing, continue polling with backoff
         const delay = Math.min(3000 * Math.pow(1.5, attempt), 20000);
         setTimeout(() => poll(attempt + 1), delay);
       } catch (err: any) {
         console.error('Error polling for preview:', err);
-        // Only set error if it's not a preview_not_found error (which means we should keep polling)
-        if (!err.message?.includes('preview_not_found')) {
-          setError(err.message || 'Failed to load preview');
-          setIsGenerating(false);
-        } else {
-          // Continue polling if preview not found
-          const delay = Math.min(3000 * Math.pow(1.5, attempt), 20000);
-          setTimeout(() => poll(attempt + 1), delay);
-        }
+        setError(err.message || 'Failed to load preview');
+        setIsGenerating(false);
       }
     };
 
