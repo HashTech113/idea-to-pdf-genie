@@ -19,6 +19,8 @@ export default function Preview() {
   const [loadingMessage, setLoadingMessage] = useState("Generating your business plan...");
   const [pollingStartTime] = useState<number>(Date.now());
   const [isPdfPollingActive, setIsPdfPollingActive] = useState(false);
+  const [userPlan, setUserPlan] = useState<string>("free");
+  const [reportType, setReportType] = useState<string>("preview");
 
   // Update loading message based on elapsed time
   useEffect(() => {
@@ -126,9 +128,9 @@ export default function Preview() {
         }
 
         if (job.status === 'completed' && job.pdf_path) {
-          // Job is complete, now fetch the PDF preview
-          console.log('Job completed, fetching PDF preview...');
-          pollForPdfPreview();
+          // Job is complete, now fetch the PDF based on user plan
+          console.log('Job completed, fetching PDF based on user plan...');
+          fetchReportByPlan();
           return;
         }
 
@@ -157,31 +159,29 @@ export default function Preview() {
       }
     };
 
-    const pollForPdfPreview = async () => {
-      // Prevent duplicate polling if URL already found
+    const fetchReportByPlan = async () => {
       if (url) {
-        console.log('Preview URL already set, skipping PDF polling');
+        console.log('Report URL already set, skipping fetch');
         return;
       }
       
-      let pdfAttempts = 0;
-      const maxPdfAttempts = 60; // 60 * 2s = 2 minutes for PDF file polling
-      let pdfDelay = 2000;
+      let attempts = 0;
+      const maxAttempts = 60;
+      let delay = 2000;
 
-      const poll = async () => {
-        // Stop if we already have a preview URL (from parallel polling)
+      const fetch = async () => {
         if (url) {
-          console.log('Preview URL found by another poller, stopping');
+          console.log('Report URL found, stopping fetch');
           setIsPdfPollingActive(false);
           return;
         }
         
         try {
-          pdfAttempts++;
+          attempts++;
           
-          if (pdfAttempts > maxPdfAttempts) {
+          if (attempts > maxAttempts) {
             if (mounted) {
-              setError('PDF preview is taking longer than expected. Please try refreshing the page.');
+              setError('PDF is taking longer than expected. Please try refreshing the page.');
               setIsGenerating(false);
               setIsLoading(false);
               setIsPdfPollingActive(false);
@@ -195,82 +195,75 @@ export default function Preview() {
             return;
           }
 
-          console.log(`Polling for PDF file (attempt ${pdfAttempts}/${maxPdfAttempts})...`);
+          // Get user plan first
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('plan')
+            .eq('user_id', session.user.id)
+            .single();
 
-          const response = await fetch(
-            `https://tvznnerrgaprchburewu.supabase.co/functions/v1/get-preview-pdf?reportId=${reportId}`,
-            {
-              headers: {
-                'Authorization': `Bearer ${session.access_token}`,
-                'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2em5uZXJyZ2FwcmNoYnVyZXd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3OTAxNzUsImV4cCI6MjA3NDM2NjE3NX0._vuf_ZB8i-_GFDz2vIc_6y_6FzjeEkGTOKz90sxiEnY',
-              },
+          const plan = profile?.plan || 'free';
+          if (mounted) {
+            setUserPlan(plan);
+          }
+
+          console.log(`Fetching report for ${plan} user (attempt ${attempts}/${maxAttempts})...`);
+
+          const response = await supabase.functions.invoke('get-report', {
+            body: { reportId },
+          });
+
+          if (response.error) {
+            // Check for preview_not_ready error
+            if (response.error.message?.includes('preview_not_ready')) {
+              console.log('Preview not ready yet, retrying...');
+              if (!mounted) return;
+              
+              delay = Math.min(delay * 1.1, 5000);
+              await new Promise(resolve => setTimeout(resolve, delay));
+              fetch();
+              return;
             }
-          );
-
-          // Handle non-OK responses
-          if (response.status === 404 || response.status === 202) {
-            console.log('PDF file not ready yet, retrying...');
-            if (!mounted) return;
-            
-            pdfDelay = Math.min(pdfDelay * 1.1, 5000);
-            await new Promise(resolve => setTimeout(resolve, pdfDelay));
-            poll();
-            return;
+            throw response.error;
           }
 
-          // Parse JSON
-          let data;
-          try {
-            data = await response.json();
-          } catch (jsonError) {
-            console.log('JSON parse error, retrying...');
-            if (!mounted) return;
-            
-            await new Promise(resolve => setTimeout(resolve, pdfDelay));
-            poll();
-            return;
-          }
-
-          // Handle "preparing" status
-          if (data?.status === 'preparing') {
-            console.log('PDF still preparing, retrying...');
-            if (!mounted) return;
-            
-            pdfDelay = Math.min(pdfDelay * 1.1, 5000);
-            await new Promise(resolve => setTimeout(resolve, pdfDelay));
-            poll();
-            return;
-          }
-
-          // Success case
-          if (data?.previewUrl) {
-            console.log('Preview URL received:', data.path);
+          if (response.data?.url) {
+            console.log('Report URL received, type:', response.data.type);
             
             if (mounted) {
-              setUrl(data.previewUrl);
-              setDownloadUrl(data.previewUrl);
+              setUrl(response.data.url);
+              setDownloadUrl(response.data.downloadUrl || null);
+              setReportType(response.data.type || 'preview');
               setIsGenerating(false);
               setIsLoading(false);
               setIsPdfPollingActive(false);
               toast({
-                title: "Preview ready!",
-                description: "Your business plan preview is now available.",
+                title: response.data.type === 'full' ? "Full Report Ready!" : "Preview Ready!",
+                description: response.data.type === 'full' 
+                  ? "Your complete business plan is now available." 
+                  : "Your 2-page preview is ready. Upgrade to download the full plan.",
               });
             }
-          } else if (!response.ok) {
-            throw new Error(data?.error || 'Failed to load preview');
+          } else {
+            // No URL yet, keep polling
+            if (!mounted) return;
+            
+            delay = Math.min(delay * 1.1, 5000);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            fetch();
           }
           
         } catch (error: any) {
-          console.error('Error polling for PDF:', error);
+          console.error('Error fetching report:', error);
           if (!mounted) return;
           
-          await new Promise(resolve => setTimeout(resolve, pdfDelay));
-          poll();
+          delay = Math.min(delay * 1.1, 5000);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          fetch();
         }
       };
 
-      poll();
+      fetch();
     };
 
     pollForJobStatus();
@@ -280,35 +273,35 @@ export default function Preview() {
     };
   }, [reportId, navigate, toast]);
 
-  // Separate effect for parallel PDF polling
+  // Separate effect for parallel PDF fetching
   useEffect(() => {
     if (!isPdfPollingActive || url || !reportId) return;
     
     let mounted = true;
-    let pdfAttempts = 0;
-    const maxPdfAttempts = 60;
-    let pdfDelay = 2000;
+    let attempts = 0;
+    const maxAttempts = 60;
+    let delay = 2000;
 
-    const pollForPdfPreview = async () => {
+    const fetchReportParallel = async () => {
       if (url) {
-        console.log('Preview URL found by another poller, stopping');
+        console.log('[Parallel] Report URL found, stopping');
         setIsPdfPollingActive(false);
         return;
       }
       
-      const poll = async () => {
+      const fetch = async () => {
         if (url) {
-          console.log('Preview URL found, stopping parallel polling');
+          console.log('[Parallel] Report URL found by another fetch, stopping');
           setIsPdfPollingActive(false);
           return;
         }
         
         try {
-          pdfAttempts++;
+          attempts++;
           
-          if (pdfAttempts > maxPdfAttempts) {
+          if (attempts > maxAttempts) {
             if (mounted) {
-              setError('PDF preview is taking longer than expected. Please try refreshing the page.');
+              setError('PDF is taking longer than expected. Please try refreshing the page.');
               setIsGenerating(false);
               setIsLoading(false);
               setIsPdfPollingActive(false);
@@ -322,84 +315,77 @@ export default function Preview() {
             return;
           }
 
-          console.log(`[Parallel] Polling for PDF file (attempt ${pdfAttempts}/${maxPdfAttempts})...`);
+          // Get user plan
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('plan')
+            .eq('user_id', session.user.id)
+            .single();
 
-          const response = await fetch(
-            `https://tvznnerrgaprchburewu.supabase.co/functions/v1/get-preview-pdf?reportId=${reportId}`,
-            {
-              headers: {
-                'Authorization': `Bearer ${session.access_token}`,
-                'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2em5uZXJyZ2FwcmNoYnVyZXd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3OTAxNzUsImV4cCI6MjA3NDM2NjE3NX0._vuf_ZB8i-_GFDz2vIc_6y_6FzjeEkGTOKz90sxiEnY',
-              },
+          const plan = profile?.plan || 'free';
+          if (mounted) {
+            setUserPlan(plan);
+          }
+
+          console.log(`[Parallel] Fetching report for ${plan} user (attempt ${attempts}/${maxAttempts})...`);
+
+          const response = await supabase.functions.invoke('get-report', {
+            body: { reportId },
+          });
+
+          if (response.error) {
+            if (response.error.message?.includes('preview_not_ready')) {
+              console.log('[Parallel] Preview not ready yet, retrying...');
+              if (!mounted) return;
+              
+              delay = Math.min(delay * 1.1, 5000);
+              await new Promise(resolve => setTimeout(resolve, delay));
+              fetch();
+              return;
             }
-          );
-
-          let data;
-          try {
-            data = await response.json();
-          } catch (jsonError) {
-            console.log('[Parallel] JSON parse error, retrying...');
-            if (!mounted) return;
-            
-            await new Promise(resolve => setTimeout(resolve, pdfDelay));
-            poll();
-            return;
+            throw response.error;
           }
 
-          if (data?.status === 'preparing') {
-            console.log('[Parallel] PDF still preparing, retrying...');
-            if (!mounted) return;
-            
-            pdfDelay = Math.min(pdfDelay * 1.1, 5000);
-            await new Promise(resolve => setTimeout(resolve, pdfDelay));
-            poll();
-            return;
-          }
-
-          if (data?.previewUrl) {
-            console.log('[Parallel] Preview URL received:', data.path);
+          if (response.data?.url) {
+            console.log('[Parallel] Report URL received, type:', response.data.type);
             
             if (mounted) {
-              setUrl(data.previewUrl);
-              setDownloadUrl(data.previewUrl);
+              setUrl(response.data.url);
+              setDownloadUrl(response.data.downloadUrl || null);
+              setReportType(response.data.type || 'preview');
               setIsGenerating(false);
               setIsLoading(false);
               setIsPdfPollingActive(false);
               toast({
-                title: "Preview ready!",
-                description: "Your business plan preview is now available.",
+                title: response.data.type === 'full' ? "Full Report Ready!" : "Preview Ready!",
+                description: response.data.type === 'full' 
+                  ? "Your complete business plan is now available." 
+                  : "Your 2-page preview is ready. Upgrade to download the full plan.",
               });
             }
             return;
           }
 
-          if (response.status === 404 || response.status === 202) {
-            console.log('[Parallel] PDF file not ready yet, retrying...');
-            if (!mounted) return;
-            
-            pdfDelay = Math.min(pdfDelay * 1.1, 5000);
-            await new Promise(resolve => setTimeout(resolve, pdfDelay));
-            poll();
-            return;
-          }
-
-          if (!response.ok) {
-            throw new Error(data?.error || 'Failed to load preview');
-          }
-          
-        } catch (error: any) {
-          console.error('[Parallel] Error polling for PDF:', error);
           if (!mounted) return;
           
-          await new Promise(resolve => setTimeout(resolve, pdfDelay));
-          poll();
+          delay = Math.min(delay * 1.1, 5000);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          fetch();
+          
+        } catch (error: any) {
+          console.error('[Parallel] Error fetching report:', error);
+          if (!mounted) return;
+          
+          delay = Math.min(delay * 1.1, 5000);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          fetch();
         }
       };
 
-      poll();
+      fetch();
     };
 
-    pollForPdfPreview();
+    fetchReportParallel();
     
     return () => {
       mounted = false;
@@ -463,9 +449,16 @@ export default function Preview() {
 
         {url && !isLoading && !error && (
           <div className="w-full h-full">
-            <h1 className="text-3xl font-bold text-foreground mb-4">
-              Business Plan Preview
-            </h1>
+            <div className="flex items-center justify-between mb-4">
+              <h1 className="text-3xl font-bold text-foreground">
+                {reportType === 'full' ? 'Business Plan' : 'Business Plan Preview (First 2 Pages)'}
+              </h1>
+              {userPlan === 'free' && reportType === 'preview' && (
+                <span className="text-sm text-muted-foreground bg-secondary px-3 py-1 rounded-full">
+                  Free Plan - Preview Only
+                </span>
+              )}
+            </div>
             <div className="h-[80vh] w-full rounded-xl overflow-hidden border">
               <iframe
                 title="Your PDF"
@@ -479,20 +472,31 @@ export default function Preview() {
 
       {/* Fixed Bottom-Right Action Bar */}
       <div className="fixed bottom-6 right-6 flex gap-3">
-        <Button
-          variant="outline"
-          onClick={() => navigate('/pricing')}
-          className="shadow-lg"
-        >
-          Pricing
-        </Button>
-        {downloadUrl && (
+        {userPlan === 'free' && url && (
           <Button
-            onClick={handleDownload}
+            variant="default"
+            onClick={() => navigate('/pricing')}
             className="shadow-lg"
           >
-            Download PDF
+            Upgrade to Download Full Plan
           </Button>
+        )}
+        {userPlan !== 'free' && downloadUrl && (
+          <>
+            <Button
+              variant="outline"
+              onClick={() => navigate('/pricing')}
+              className="shadow-lg"
+            >
+              Pricing
+            </Button>
+            <Button
+              onClick={handleDownload}
+              className="shadow-lg"
+            >
+              Download Full PDF
+            </Button>
+          </>
         )}
       </div>
     </div>
