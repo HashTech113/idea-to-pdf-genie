@@ -67,6 +67,7 @@ serve(async (req) => {
         const n8nUrl = 'https://hashirceo.app.n8n.cloud/webhook-test/2fcbe92b-1cd7-4ac9-987f-34dbaa1dc93f';
         
         console.log('Calling n8n webhook for reportId:', reportId);
+        console.log('Webhook payload:', { userId, reportId, formDataKeys: Object.keys(formData) });
         
         const response = await fetch(n8nUrl, {
           method: 'POST',
@@ -80,7 +81,7 @@ serve(async (req) => {
             supabaseUrl: supabaseUrl,
             supabaseKey: supabaseKey 
           }),
-          signal: AbortSignal.timeout(30000), // 30 second timeout
+          signal: AbortSignal.timeout(180000), // 3 minute timeout for PDF generation
         });
 
         if (!response.ok) {
@@ -92,7 +93,7 @@ serve(async (req) => {
             .from('jobs')
             .update({ 
               status: 'failed',
-              error_message: `Webhook failed: ${response.status} ${errorText}`
+              error_message: `Webhook failed: ${response.status} - ${errorText.substring(0, 200)}`
             })
             .eq('report_id', reportId);
         } else {
@@ -100,54 +101,68 @@ serve(async (req) => {
           
           // Parse webhook response to get PDF URLs
           const webhookData = await response.json();
-          console.log('Webhook response data:', webhookData);
+          console.log('Webhook response keys:', Object.keys(webhookData));
+          console.log('Webhook response:', JSON.stringify(webhookData).substring(0, 500));
           
-          // Extract PDF URLs from response
-          const previewPdfUrl = webhookData.previewPdfUrl || webhookData.pdfUrl;
-          const fullPdfUrl = webhookData.fullPdfUrl || webhookData.pdfUrl;
+          // Extract PDF URLs from response - support multiple field names
+          const previewPdfUrl = webhookData.previewPdfUrl || webhookData.preview_pdf_url || webhookData.pdfUrl || webhookData.pdf_url;
+          const fullPdfUrl = webhookData.fullPdfUrl || webhookData.full_pdf_url || webhookData.pdfUrl || webhookData.pdf_url;
+          
+          console.log('Extracted URLs:', { previewPdfUrl, fullPdfUrl });
           
           if (previewPdfUrl || fullPdfUrl) {
             // Update job with PDF URLs
-            await supabase
+            const updateResult = await supabase
               .from('jobs')
               .update({ 
                 status: 'completed',
-                preview_pdf_path: previewPdfUrl,
-                full_pdf_path: fullPdfUrl,
+                preview_pdf_path: previewPdfUrl || fullPdfUrl,
+                full_pdf_path: fullPdfUrl || previewPdfUrl,
                 completed_at: new Date().toISOString()
               })
               .eq('report_id', reportId);
             
-            console.log('Job updated with PDF URLs:', { previewPdfUrl, fullPdfUrl });
+            if (updateResult.error) {
+              console.error('Error updating job with PDF URLs:', updateResult.error);
+            } else {
+              console.log('Job successfully updated with PDF URLs');
+            }
           } else {
-            console.error('No PDF URLs in webhook response');
+            console.error('No PDF URLs found in webhook response. Response:', JSON.stringify(webhookData));
             await supabase
               .from('jobs')
               .update({ 
                 status: 'failed',
-                error_message: 'No PDF URLs returned from webhook'
+                error_message: 'No PDF URLs found in webhook response. Check n8n workflow output format.'
               })
               .eq('report_id', reportId);
           }
         }
       } catch (error) {
         console.error('Error calling n8n webhook:', error);
+        console.error('Error details:', error.message, error.stack);
         
-        // Only mark as failed if it's not a timeout error
-        // Timeouts are expected for long-running processes
-        const isTimeout = error.message?.includes('timed out') || error.message?.includes('TimeoutError');
+        // Check if it's a timeout error
+        const isTimeout = error.message?.includes('timed out') || error.message?.includes('TimeoutError') || error.name === 'TimeoutError';
         
-        if (!isTimeout) {
-          // Update job status to failed only for non-timeout errors
+        if (isTimeout) {
+          console.log('Webhook timed out after 180s. PDF generation may still be processing.');
           await supabase
             .from('jobs')
             .update({ 
               status: 'failed',
-              error_message: error.message || 'Webhook call failed'
+              error_message: 'PDF generation timed out after 3 minutes. Please try again or contact support.'
             })
             .eq('report_id', reportId);
         } else {
-          console.log('Webhook timed out, but job will continue processing in background');
+          // Update job status to failed for other errors
+          await supabase
+            .from('jobs')
+            .update({ 
+              status: 'failed',
+              error_message: `Webhook error: ${error.message || 'Unknown error occurred'}`
+            })
+            .eq('report_id', reportId);
         }
       }
     };
