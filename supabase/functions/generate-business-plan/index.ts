@@ -99,41 +99,47 @@ serve(async (req) => {
         } else {
           console.log('n8n webhook succeeded for reportId:', reportId);
           
-          // Parse webhook response to get PDF URLs
+          // Parse webhook response to get PDF URL
           const webhookData = await response.json();
-          console.log('Webhook response keys:', Object.keys(webhookData));
-          console.log('Webhook response:', JSON.stringify(webhookData).substring(0, 500));
+          console.log('Full webhook response:', JSON.stringify(webhookData, null, 2));
           
-          // Extract PDF URLs from response - support multiple field names
-          const previewPdfUrl = webhookData.previewPdfUrl || webhookData.preview_pdf_url || webhookData.pdfUrl || webhookData.pdf_url;
-          const fullPdfUrl = webhookData.fullPdfUrl || webhookData.full_pdf_url || webhookData.pdfUrl || webhookData.pdf_url;
+          // Extract PDF URL from response - try multiple common field names
+          const pdfUrl = webhookData.pdfUrl || 
+                        webhookData.pdf_url || 
+                        webhookData.url || 
+                        webhookData.previewPdfUrl || 
+                        webhookData.preview_pdf_url ||
+                        webhookData.fullPdfUrl ||
+                        webhookData.full_pdf_url;
           
-          console.log('Extracted URLs:', { previewPdfUrl, fullPdfUrl });
+          console.log('Extracted PDF URL:', pdfUrl);
           
-          if (previewPdfUrl || fullPdfUrl) {
-            // Update job with PDF URLs
+          if (pdfUrl) {
+            // Update job with the PDF URL (same URL for both preview and full for now)
             const updateResult = await supabase
               .from('jobs')
               .update({ 
                 status: 'completed',
-                preview_pdf_path: previewPdfUrl || fullPdfUrl,
-                full_pdf_path: fullPdfUrl || previewPdfUrl,
+                preview_pdf_path: pdfUrl,
+                full_pdf_path: pdfUrl,
                 completed_at: new Date().toISOString()
               })
               .eq('report_id', reportId);
             
             if (updateResult.error) {
-              console.error('Error updating job with PDF URLs:', updateResult.error);
+              console.error('Error updating job with PDF URL:', updateResult.error);
             } else {
-              console.log('Job successfully updated with PDF URLs');
+              console.log('Job successfully updated with PDF URL:', pdfUrl);
             }
           } else {
-            console.error('No PDF URLs found in webhook response. Response:', JSON.stringify(webhookData));
+            console.error('No PDF URL found in webhook response.');
+            console.error('Available fields:', Object.keys(webhookData).join(', '));
+            console.error('Full response:', JSON.stringify(webhookData));
             await supabase
               .from('jobs')
               .update({ 
                 status: 'failed',
-                error_message: 'No PDF URLs found in webhook response. Check n8n workflow output format.'
+                error_message: `No PDF URL in webhook response. Available fields: ${Object.keys(webhookData).join(', ')}`
               })
               .eq('report_id', reportId);
           }

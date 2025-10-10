@@ -184,7 +184,7 @@ export default function Preview() {
           setUserPlan(plan);
         }
 
-        // Get PDF URL from job record based on user plan
+        // Get PDF URL from job record
         const { data: job } = await supabase
           .from('jobs')
           .select('preview_pdf_path, full_pdf_path')
@@ -192,12 +192,13 @@ export default function Preview() {
           .single();
 
         if (job) {
-          const pdfUrl = plan === 'free' ? job.preview_pdf_path : job.full_pdf_path;
-          console.log('PDF URL from job:', pdfUrl, 'for plan:', plan);
+          // Use preview_pdf_path for free users, full_pdf_path for paid users
+          const pdfUrl = plan === 'free' ? job.preview_pdf_path : (job.full_pdf_path || job.preview_pdf_path);
+          console.log('Displaying PDF URL:', pdfUrl, 'for plan:', plan);
           
           if (pdfUrl && mounted) {
             setUrl(pdfUrl);
-            setDownloadUrl(plan !== 'free' ? job.full_pdf_path : null);
+            setDownloadUrl(plan !== 'free' ? (job.full_pdf_path || pdfUrl) : null);
             setReportType(plan === 'free' ? 'preview' : 'full');
             setIsGenerating(false);
             setIsLoading(false);
@@ -209,7 +210,7 @@ export default function Preview() {
                 : "Your complete business plan is now available.",
             });
           } else if (mounted) {
-            console.log('No PDF URL available yet for plan:', plan);
+            console.log('No PDF URL available yet');
           }
         }
       } catch (error: any) {
@@ -255,7 +256,7 @@ export default function Preview() {
 
         console.log(`[Parallel] Checking for PDF URL in job for ${plan} user...`);
 
-        // Get PDF URL from job record based on user plan
+        // Get PDF URL from job record
         const { data: job } = await supabase
           .from('jobs')
           .select('preview_pdf_path, full_pdf_path')
@@ -263,12 +264,12 @@ export default function Preview() {
           .single();
 
         if (job && mounted) {
-          const pdfUrl = plan === 'free' ? job.preview_pdf_path : job.full_pdf_path;
-          console.log('[Parallel] PDF URL found in job:', pdfUrl, 'for plan:', plan);
+          const pdfUrl = plan === 'free' ? job.preview_pdf_path : (job.full_pdf_path || job.preview_pdf_path);
+          console.log('[Parallel] Displaying PDF URL:', pdfUrl, 'for plan:', plan);
           
           if (pdfUrl) {
             setUrl(pdfUrl);
-            setDownloadUrl(plan !== 'free' ? job.full_pdf_path : null);
+            setDownloadUrl(plan !== 'free' ? (job.full_pdf_path || pdfUrl) : null);
             setReportType(plan === 'free' ? 'preview' : 'full');
             setIsGenerating(false);
             setIsLoading(false);
