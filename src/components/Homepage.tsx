@@ -227,22 +227,104 @@ const Homepage = () => {
         </div>
       </section>
 
-      {/* Mentions Section */}
-      <section className="py-16 px-4">
+      {/* Subscription Pricing Section */}
+      <section className="py-16 px-4 bg-gray-50">
         <div className="max-w-4xl mx-auto">
-          <div className="p-8 text-center">
-            <h2 className="text-4xl font-bold text-gray-900 mb-12">Mentioned In..</h2>
-            <div className="flex justify-center space-x-12 opacity-60">
-              <div className="w-24 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
-                <span className="text-gray-600 text-sm font-semibold">Logo 1</span>
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Subscription pricing
+            </h2>
+            <p className="text-lg text-gray-600">
+              World's 1st market research agent
+            </p>
+          </div>
+
+          {/* Features List */}
+          <div className="mb-12 max-w-md mx-auto">
+            <ul className="space-y-3">
+              <li className="flex items-center gap-3">
+                <div className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center">
+                  <CheckCircle className="w-3 h-3 text-blue-600" />
+                </div>
+                <span className="text-gray-900">Unlimited seats</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <div className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center">
+                  <CheckCircle className="w-3 h-3 text-blue-600" />
+                </div>
+                <span className="text-gray-900">Results in 5 minutes</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <div className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center">
+                  <CheckCircle className="w-3 h-3 text-blue-600" />
+                </div>
+                <span className="text-gray-900">AI-powered insights with verified B2B audiences</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Pricing Card */}
+          <div className="max-w-md mx-auto">
+            <Card className="border-2 border-blue-200 shadow-lg relative bg-white">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <div className="bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
+                  Most Popular
+                </div>
               </div>
-              <div className="w-24 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
-                <span className="text-gray-600 text-sm font-semibold">Logo 2</span>
+              
+              <div className="text-center pt-8 px-6">
+                <h3 className="text-3xl font-bold text-gray-900 mb-2">
+                  Pro
+                </h3>
+                <div className="mb-4">
+                  <span className="text-5xl font-bold text-gray-900">$10</span>
+                  <span className="text-gray-600">/month</span>
+                </div>
+                <p className="text-base text-gray-600 mb-6">
+                  Unlock full access to the market research agent with unlimited AI insight tokens.
+                </p>
+                
+                <p className="text-sm text-gray-500 mb-6">
+                  30-day money-back guarantee — cancel anytime.
+                </p>
+                
+                <Button 
+                  className="w-full bg-black text-white hover:bg-gray-800 h-12 text-lg font-semibold mb-6"
+                  onClick={() => window.location.href = 'https://rzp.io/rzp/TqlDyDU'}
+                >
+                  Subscribe now →
+                </Button>
               </div>
-              <div className="w-24 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
-                <span className="text-gray-600 text-sm font-semibold">Logo 3</span>
+
+              <div className="flex-col items-start border-t border-gray-200 pt-6 px-6 pb-6">
+                <h3 className="font-semibold text-gray-900 mb-4">
+                  What you get with Pro:
+                </h3>
+                <ul className="space-y-3 w-full">
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm text-gray-900">Unlimited access to the AI-powered research agent</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm text-gray-900">5-minute insight delivery (priority)</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm text-gray-900">Advanced audience filters</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm text-gray-900">Priority email support</span>
+                  </li>
+                </ul>
               </div>
-            </div>
+            </Card>
+          </div>
+
+          {/* Trust Elements */}
+          <div className="text-center text-sm text-gray-500 max-w-md mx-auto mt-8">
+            <p>Secure payment processing. Cancel anytime with one click.</p>
           </div>
         </div>
       </section>
