@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { Step2BasicInfo } from './steps/Step2BasicInfo';
-import { PreviewModal } from './PreviewModal';
 
 export interface FormData {
   // Step 1
@@ -78,7 +77,6 @@ const initialFormData: FormData = {
 export const MultiStepBusinessPlanForm = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<FormData>(initialFormData);
-  const [showPreviewModal, setShowPreviewModal] = useState(false);
   const { toast } = useToast();
   const { signOut } = useAuth();
   const navigate = useNavigate();
@@ -108,9 +106,8 @@ export const MultiStepBusinessPlanForm = () => {
 
 
   const submitForm = async () => {
-    // Just show the preview modal with form data
-    // Generation will happen when user clicks download
-    setShowPreviewModal(true);
+    // Navigate to pricing page
+    navigate('/pricing');
   };
 
   const renderStep = () => {
@@ -127,21 +124,13 @@ export const MultiStepBusinessPlanForm = () => {
   };
 
   return (
-    <>
-      <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
-        <div className="max-w-2xl mx-auto">
-          {/* Form Card */}
-          <div className="bg-card rounded-2xl p-6 sm:p-8 lg:p-10 border border-border" style={{ boxShadow: 'var(--shadow-large)' }}>
-            {renderStep()}
-          </div>
+    <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
+      <div className="max-w-2xl mx-auto">
+        {/* Form Card */}
+        <div className="bg-card rounded-2xl p-6 sm:p-8 lg:p-10 border border-border" style={{ boxShadow: 'var(--shadow-large)' }}>
+          {renderStep()}
         </div>
       </div>
-
-      <PreviewModal 
-        open={showPreviewModal} 
-        onClose={() => setShowPreviewModal(false)}
-        formData={formData}
-      />
-    </>
+    </div>
   );
 };
