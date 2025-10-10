@@ -44,8 +44,10 @@ export type Database = {
           created_at: string
           error_message: string | null
           form_data: Json
+          full_pdf_path: string | null
           id: string
           pdf_path: string | null
+          preview_pdf_path: string | null
           report_id: string | null
           status: string
           updated_at: string
@@ -56,8 +58,10 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           form_data: Json
+          full_pdf_path?: string | null
           id?: string
           pdf_path?: string | null
+          preview_pdf_path?: string | null
           report_id?: string | null
           status?: string
           updated_at?: string
@@ -68,8 +72,10 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           form_data?: Json
+          full_pdf_path?: string | null
           id?: string
           pdf_path?: string | null
+          preview_pdf_path?: string | null
           report_id?: string | null
           status?: string
           updated_at?: string

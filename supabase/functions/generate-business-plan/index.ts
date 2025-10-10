@@ -97,6 +97,38 @@ serve(async (req) => {
             .eq('report_id', reportId);
         } else {
           console.log('n8n webhook succeeded for reportId:', reportId);
+          
+          // Parse webhook response to get PDF URLs
+          const webhookData = await response.json();
+          console.log('Webhook response data:', webhookData);
+          
+          // Extract PDF URLs from response
+          const previewPdfUrl = webhookData.previewPdfUrl || webhookData.pdfUrl;
+          const fullPdfUrl = webhookData.fullPdfUrl || webhookData.pdfUrl;
+          
+          if (previewPdfUrl || fullPdfUrl) {
+            // Update job with PDF URLs
+            await supabase
+              .from('jobs')
+              .update({ 
+                status: 'completed',
+                preview_pdf_path: previewPdfUrl,
+                full_pdf_path: fullPdfUrl,
+                completed_at: new Date().toISOString()
+              })
+              .eq('report_id', reportId);
+            
+            console.log('Job updated with PDF URLs:', { previewPdfUrl, fullPdfUrl });
+          } else {
+            console.error('No PDF URLs in webhook response');
+            await supabase
+              .from('jobs')
+              .update({ 
+                status: 'failed',
+                error_message: 'No PDF URLs returned from webhook'
+              })
+              .eq('report_id', reportId);
+          }
         }
       } catch (error) {
         console.error('Error calling n8n webhook:', error);

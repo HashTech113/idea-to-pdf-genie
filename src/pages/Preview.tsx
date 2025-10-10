@@ -100,7 +100,7 @@ export default function Preview() {
         // Check job status in database
         const { data: job, error: jobError } = await supabase
           .from('jobs')
-          .select('status, error_message, pdf_path, completed_at')
+          .select('status, error_message, preview_pdf_path, full_pdf_path, completed_at')
           .eq('report_id', reportId)
           .maybeSingle();
 
@@ -122,12 +122,12 @@ export default function Preview() {
           return;
         }
 
-        console.log('Job status:', job.status, 'Path:', job.pdf_path);
+        console.log('Job status:', job.status, 'Preview Path:', job.preview_pdf_path, 'Full Path:', job.full_pdf_path);
         if (mounted) {
           setJobStatus(job.status);
         }
 
-        if (job.status === 'completed' && job.pdf_path) {
+        if (job.status === 'completed' && (job.preview_pdf_path || job.full_pdf_path)) {
           // Job is complete, fetch the PDF URL from job record
           console.log('Job completed, fetching PDF URL from job...');
           fetchReportFromJob();
@@ -184,19 +184,20 @@ export default function Preview() {
           setUserPlan(plan);
         }
 
-        // Get PDF URL from job record
+        // Get PDF URL from job record based on user plan
         const { data: job } = await supabase
           .from('jobs')
-          .select('pdf_path')
+          .select('preview_pdf_path, full_pdf_path')
           .eq('report_id', reportId)
           .single();
 
-        if (job?.pdf_path) {
-          console.log('PDF URL from job:', job.pdf_path);
+        if (job) {
+          const pdfUrl = plan === 'free' ? job.preview_pdf_path : job.full_pdf_path;
+          console.log('PDF URL from job:', pdfUrl, 'for plan:', plan);
           
-          if (mounted) {
-            setUrl(job.pdf_path);
-            setDownloadUrl(plan !== 'free' ? job.pdf_path : null);
+          if (pdfUrl && mounted) {
+            setUrl(pdfUrl);
+            setDownloadUrl(plan !== 'free' ? job.full_pdf_path : null);
             setReportType(plan === 'free' ? 'preview' : 'full');
             setIsGenerating(false);
             setIsLoading(false);
@@ -207,6 +208,8 @@ export default function Preview() {
                 ? "Your 2-page preview is ready. Upgrade to download the full plan." 
                 : "Your complete business plan is now available.",
             });
+          } else if (mounted) {
+            console.log('No PDF URL available yet for plan:', plan);
           }
         }
       } catch (error: any) {
@@ -252,28 +255,31 @@ export default function Preview() {
 
         console.log(`[Parallel] Checking for PDF URL in job for ${plan} user...`);
 
-        // Get PDF URL from job record
+        // Get PDF URL from job record based on user plan
         const { data: job } = await supabase
           .from('jobs')
-          .select('pdf_path')
+          .select('preview_pdf_path, full_pdf_path')
           .eq('report_id', reportId)
           .single();
 
-        if (job?.pdf_path && mounted) {
-          console.log('[Parallel] PDF URL found in job:', job.pdf_path);
+        if (job && mounted) {
+          const pdfUrl = plan === 'free' ? job.preview_pdf_path : job.full_pdf_path;
+          console.log('[Parallel] PDF URL found in job:', pdfUrl, 'for plan:', plan);
           
-          setUrl(job.pdf_path);
-          setDownloadUrl(plan !== 'free' ? job.pdf_path : null);
-          setReportType(plan === 'free' ? 'preview' : 'full');
-          setIsGenerating(false);
-          setIsLoading(false);
-          setIsPdfPollingActive(false);
-          toast({
-            title: plan === 'free' ? "Preview Ready!" : "Full Report Ready!",
-            description: plan === 'free' 
-              ? "Your 2-page preview is ready. Upgrade to download the full plan." 
-              : "Your complete business plan is now available.",
-          });
+          if (pdfUrl) {
+            setUrl(pdfUrl);
+            setDownloadUrl(plan !== 'free' ? job.full_pdf_path : null);
+            setReportType(plan === 'free' ? 'preview' : 'full');
+            setIsGenerating(false);
+            setIsLoading(false);
+            setIsPdfPollingActive(false);
+            toast({
+              title: plan === 'free' ? "Preview Ready!" : "Full Report Ready!",
+              description: plan === 'free' 
+                ? "Your 2-page preview is ready. Upgrade to download the full plan." 
+                : "Your complete business plan is now available.",
+            });
+          }
         }
       } catch (error: any) {
         console.error('[Parallel] Error fetching report from job:', error);
