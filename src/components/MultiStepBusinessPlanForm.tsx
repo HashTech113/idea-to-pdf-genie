@@ -6,6 +6,28 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { LogOut, Loader2, FileText } from "lucide-react";
 
+export type FormData = {
+  businessName: string;
+  businessDescription: string;
+  numberOfEmployees: string;
+  customerLocation: string;
+  offeringType: string;
+  deliveryMethod: string;
+  privacyAccepted?: boolean;
+  businessType?: string;
+  planPurpose?: string;
+  planLanguage?: string;
+  customerGroups?: Array<{ name?: string; description?: string; incomeLevel?: string }>;
+  productsServices?: Array<{ name: string; description: string }>;
+  successDrivers?: string[];
+  weaknesses?: string[];
+  planCurrency?: string;
+  investments?: Array<{ item: string; category?: string; amount: number; description?: string }>;
+  firstYearRevenue?: string;
+  yearlyGrowth?: string;
+  operationsCosts?: Array<{ category: string; amount: number; percentage: number }>;
+};
+
 export default function BusinessPlanForm() {
   const [formData, setFormData] = useState({
     businessName: "",
