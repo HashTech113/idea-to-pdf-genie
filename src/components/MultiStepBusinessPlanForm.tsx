@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -108,6 +108,21 @@ export const MultiStepBusinessPlanForm = () => {
     setFormData((prev) => ({ ...prev, ...stepData }));
   };
 
+  /**
+   * Helper: try to parse JSON safely; if it fails, return null
+   */
+  const tryParseJson = async (res: Response) => {
+    try {
+      return await res.json();
+    } catch {
+      return null;
+    }
+  };
+
+  /**
+   * Submit: robust handling for JSON (expected) and a fallback for blobs.
+   * Shows helpful error messages when the server doesn't return JSON.
+   */
   const submitForm = async () => {
     setIsGenerating(true);
     setError(false);
@@ -118,44 +133,81 @@ export const MultiStepBusinessPlanForm = () => {
 
       const response = await fetch(n8nUrl, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: "user-" + Date.now(),
           reportId: "report-" + Date.now(),
-          formData: formData,
+          formData,
         }),
       });
 
+      const contentType = response.headers.get("content-type") || "";
+
+      // Non-2xx → grab a short body preview to help debug
       if (!response.ok) {
-        throw new Error("Failed to generate PDF");
+        const errText = await response.text().catch(() => "");
+        throw new Error(`HTTP ${response.status} ${response.statusText}: ${errText.slice(0, 200)}`);
       }
 
-      const data = await response.json();
+      // Expected: JSON with { pdfUrl }
+      if (contentType.includes("application/json")) {
+        const data = await tryParseJson(response);
+        const url = data?.pdfUrl;
 
-      if (data.pdfUrl) {
-        setPdfUrl(data.pdfUrl);
+        if (typeof url === "string" && url.length > 0) {
+          setPdfUrl(url);
+          setError(false);
+          toast({
+            title: "PDF Generated!",
+            description: "Your business plan is ready to view.",
+          });
+          return;
+        }
+
+        // JSON arrived but no pdfUrl
+        throw new Error("No pdfUrl in JSON response");
+      }
+
+      // Fallback: if server returns a PDF blob directly (unlikely for your n8n flow)
+      if (contentType.includes("application/pdf") || contentType.includes("octet-stream")) {
+        const blob = await response.blob();
+        if (!blob || blob.size === 0) throw new Error("Empty PDF response");
+        const objectUrl = URL.createObjectURL(blob);
+        setPdfUrl(objectUrl);
         setError(false);
         toast({
           title: "PDF Generated!",
           description: "Your business plan is ready to view.",
         });
-      } else {
-        throw new Error("No PDF URL in response");
+        return;
       }
-    } catch (error) {
-      console.error("Error generating PDF:", error);
+
+      // Unexpected content type
+      const preview = await response.text().catch(() => "");
+      throw new Error(`Expected JSON but got "${contentType || "unknown"}". Body: ${preview.slice(0, 200)}`);
+    } catch (err: any) {
+      console.error("Error generating PDF:", err);
       setError(true);
       toast({
         title: "Error",
-        description: "Failed to generate preview. Please try again.",
+        description: err?.message || "Failed to generate preview. Please try again.",
         variant: "destructive",
       });
     } finally {
       setIsGenerating(false);
     }
   };
+
+  // Optional: when a new pdfUrl is set, open it in a new tab automatically.
+  useEffect(() => {
+    if (pdfUrl) {
+      try {
+        window.open(pdfUrl, "_blank", "noopener,noreferrer");
+      } catch {
+        // Ignore if popup blocked; user still sees the inline preview below
+      }
+    }
+  }, [pdfUrl]);
 
   const renderStep = () => {
     return (
@@ -200,13 +252,24 @@ export const MultiStepBusinessPlanForm = () => {
             style={{ boxShadow: "var(--shadow-large)" }}
           >
             <p className="text-destructive font-medium">Failed to generate preview</p>
-            <p className="text-muted-foreground text-sm">Please try again</p>
+            <p className="text-muted-foreground text-sm">
+              Please try again. If it keeps failing, check the server response type.
+            </p>
           </div>
         )}
 
         {/* PDF Preview */}
         {pdfUrl && !error && (
-          <div className="bg-card rounded-2xl p-4 border border-border" style={{ boxShadow: "var(--shadow-large)" }}>
+          <div
+            className="bg-card rounded-2xl p-4 border border-border space-y-3"
+            style={{ boxShadow: "var(--shadow-large)" }}
+          >
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground break-all">{pdfUrl}</p>
+              <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className="text-primary underline text-sm">
+                Open in new tab
+              </a>
+            </div>
             <iframe
               src={pdfUrl}
               className="w-full"
