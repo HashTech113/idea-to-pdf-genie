@@ -80,6 +80,7 @@ export const MultiStepBusinessPlanForm = () => {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isGenerating, setIsGenerating] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [error, setError] = useState(false);
   const { toast } = useToast();
   const { signOut } = useAuth();
   const navigate = useNavigate();
@@ -110,6 +111,8 @@ export const MultiStepBusinessPlanForm = () => {
 
   const submitForm = async () => {
     setIsGenerating(true);
+    setError(false);
+    setPdfUrl(null);
     
     try {
       const n8nUrl = 'https://hashirceo.app.n8n.cloud/webhook/2fcbe92b-1cd7-4ac9-987f-34dbaa1dc93f';
@@ -134,6 +137,7 @@ export const MultiStepBusinessPlanForm = () => {
       
       if (data.pdfUrl) {
         setPdfUrl(data.pdfUrl);
+        setError(false);
         toast({
           title: "PDF Generated!",
           description: "Your business plan is ready to view.",
@@ -143,9 +147,10 @@ export const MultiStepBusinessPlanForm = () => {
       }
     } catch (error) {
       console.error('Error generating PDF:', error);
+      setError(true);
       toast({
         title: "Error",
-        description: "Failed to generate PDF. Please try again.",
+        description: "Failed to generate preview. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -175,23 +180,32 @@ export const MultiStepBusinessPlanForm = () => {
         </div>
 
         {/* Loading State */}
-        {isGenerating && !pdfUrl && (
+        {isGenerating && !pdfUrl && !error && (
           <div className="bg-card rounded-2xl p-8 border border-border flex flex-col items-center justify-center space-y-4" style={{ boxShadow: 'var(--shadow-large)' }}>
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            <p className="text-foreground font-medium">Loading PDF preview…</p>
+            <p className="text-foreground font-medium">Generating preview…</p>
             <p className="text-muted-foreground text-sm">This may take a moment</p>
           </div>
         )}
 
+        {/* Error State */}
+        {error && !isGenerating && (
+          <div className="bg-card rounded-2xl p-8 border border-border flex flex-col items-center justify-center space-y-4" style={{ boxShadow: 'var(--shadow-large)' }}>
+            <p className="text-destructive font-medium">Failed to generate preview</p>
+            <p className="text-muted-foreground text-sm">Please try again</p>
+          </div>
+        )}
+
         {/* PDF Preview */}
-        {pdfUrl && (
+        {pdfUrl && !error && (
           <div className="bg-card rounded-2xl p-4 border border-border" style={{ boxShadow: 'var(--shadow-large)' }}>
             <iframe
               src={pdfUrl}
-              className="w-full rounded-xl"
+              className="w-full"
               style={{ 
                 height: '700px',
-                boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)'
+                borderRadius: '12px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
               }}
               title="Business Plan PDF Preview"
             />
