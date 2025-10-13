@@ -37,16 +37,39 @@ serve(async (req) => {
     });
 
     // Get the response from n8n
-    const responseData = await response.json();
-    console.log('Response from n8n:', responseData);
+    const contentType = response.headers.get('content-type');
+    console.log('Response status from n8n:', response.status);
+    console.log('Response content-type:', contentType);
 
-    return new Response(
-      JSON.stringify(responseData),
-      {
-        status: response.status,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+    // Check if response is JSON
+    if (contentType && contentType.includes('application/json')) {
+      const responseData = await response.json();
+      console.log('Response from n8n:', responseData);
+
+      return new Response(
+        JSON.stringify(responseData),
+        {
+          status: response.status,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    } else {
+      // Handle non-JSON response (likely an error)
+      const responseText = await response.text();
+      console.error('Non-JSON response from n8n:', responseText.substring(0, 500));
+
+      return new Response(
+        JSON.stringify({ 
+          error: 'n8n webhook returned non-JSON response',
+          status: response.status,
+          details: responseText.substring(0, 200)
+        }),
+        {
+          status: response.ok ? 200 : response.status,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
   } catch (error) {
     console.error('Error in proxy-n8n function:', error);
     return new Response(
