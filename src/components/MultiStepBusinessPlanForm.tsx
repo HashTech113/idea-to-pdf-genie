@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { LogOut, Loader2, FileText } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 export type FormData = {
   businessName: string;
@@ -29,6 +31,8 @@ export type FormData = {
 };
 
 export default function BusinessPlanForm() {
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
   const [formData, setFormData] = useState({
     businessName: "",
     businessDescription: "",
@@ -198,9 +202,9 @@ export default function BusinessPlanForm() {
     }
   };
 
-  const handleLogout = () => {
-    // Implement logout logic
-    console.log("Logout clicked");
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/");
   };
 
   const handleBack = () => {
