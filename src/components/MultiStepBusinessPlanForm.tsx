@@ -1,48 +1,240 @@
-Steps to Fix:
-1. Add HTTP Request Node in n8n Workflow
-After your n8n workflow generates the PDF and uploads it to Supabase Storage, add an HTTP Request node with these settings:
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { Step1Objective } from './steps/Step1Objective';
+import { Step2BasicInfo } from './steps/Step2BasicInfo';
+import { Step3CustomerGroups } from './steps/Step3CustomerGroups';
+import { Step4ProductsServices } from './steps/Step4ProductsServices';
+import { Step5SuccessDrivers } from './steps/Step5SuccessDrivers';
+import { Step6Investment } from './steps/Step6Investment';
+import { Step7Financial } from './steps/Step7Financial';
+import { ProgressIndicator } from './ProgressIndicator';
 
-Node Configuration:
-
-Method: POST
-URL: https://tvznnerrgaprchburewu.supabase.co/functions/v1/update-pdf-status
-Authentication: None (the edge function uses service role key internally)
-Headers:
-Content-Type: application/json
-Body (JSON):
-
-{
-  "reportId": "{{$node["Webhook"].json["reportId"]}}",
-  "pdfUrl": "https://tvznnerrgaprchburewu.supabase.co/storage/v1/object/public/business-plans/pdf-path/d9e8a274-821f-42ac-bc78-d643e3f4d22a/cloud kitchen.pdf",
-  "previewPdfUrl": "https://tvznnerrgaprchburewu.supabase.co/storage/v1/object/public/business-plans/pdf-path/d9e8a274-821f-42ac-bc78-d643e3f4d22a/cloud kitchen.pdf",
-  "fullPdfUrl": "https://tvznnerrgaprchburewu.supabase.co/storage/v1/object/public/business-plans/pdf-path/d9e8a274-821f-42ac-bc78-d643e3f4d22a/cloud kitchen.pdf"
+export interface FormData {
+  // Step 1
+  privacyAccepted: boolean;
+  businessType: string;
+  planPurpose: string;
+  planLanguage: string;
+  
+  // Step 2
+  businessName: string;
+  businessDescription: string;
+  numberOfEmployees: string;
+  customerLocation: string;
+  offeringType: string;
+  deliveryMethod: string;
+  
+  // Step 3
+  customerGroups?: any;
+  
+  // Step 4
+  productsServices?: any;
+  
+  // Step 5
+  successDrivers?: any;
+  weaknesses?: any;
+  
+  // Step 6
+  investmentAmount?: string;
+  fundingSource?: string;
+  planCurrency?: string;
+  investments?: any;
+  
+  // Step 7
+  revenueProjection?: string;
+  breakEvenTimeline?: string;
+  firstYearRevenue?: string;
+  yearlyGrowth?: string;
+  operationsCosts?: any;
 }
-Important:
 
-Replace the hardcoded URL with the actual expression/variable from your n8n workflow that contains the generated PDF URL
-The reportId should come from the initial webhook trigger
-You can send the same URL for all three fields (pdfUrl, previewPdfUrl, fullPdfUrl) if you only generate one PDF
-2. Error Handling in n8n
-If PDF generation fails in n8n, send this payload instead:
+export const MultiStepBusinessPlanForm = () => {
+  const [currentStep, setCurrentStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  const [formData, setFormData] = useState<FormData>({
+    privacyAccepted: false,
+    businessType: '',
+    planPurpose: '',
+    planLanguage: '',
+    businessName: '',
+    businessDescription: '',
+    numberOfEmployees: '',
+    customerLocation: '',
+    offeringType: '',
+    deliveryMethod: '',
+  });
 
+  const updateData = (data: Partial<FormData>) => {
+    setFormData(prev => ({ ...prev, ...data }));
+  };
 
-{
-  "reportId": "{{$node["Webhook"].json["reportId"]}}",
-  "error": "Detailed error message here"
-}
-This will update the job status to 'failed' and stop the loading spinner with an error message.
+  const handleNext = () => {
+    setCurrentStep(prev => Math.min(prev + 1, 7));
+  };
 
-3. Testing the Fix
-After configuring n8n:
+  const handlePrev = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 1));
+  };
 
-Submit a new business plan form
-n8n will receive the webhook
-n8n generates the PDF and uploads to storage
-n8n POSTs to update-pdf-status with the PDF URL
-The jobs table gets updated with status: 'completed' and preview_pdf_path: [your-pdf-url]
-The frontend polling detects the URL and stops loading, displays the PDF
-Expected Outcome:
-✅ Loading spinner stops as soon as PDF URL is available
-✅ PDF displays immediately in iframe
-✅ No more stuck "processing" jobs
-✅ User sees the PDF within seconds of n8n completion
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to log out. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleSubmit = async () => {
+    setIsLoading(true);
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      // Generate a unique report ID
+      const reportId = crypto.randomUUID();
+
+      // Insert job record
+      const { error: insertError } = await supabase
+        .from('jobs')
+        .insert({
+          id: reportId,
+          user_id: user.id,
+          status: 'processing',
+          form_data: formData as any,
+        });
+
+      if (insertError) throw insertError;
+
+      // Prepare n8n webhook URL
+      const n8nUrl = 'https://salman.app.n8n.cloud/webhook/c78bfad0-5b5f-4a25-bfab-47c1cb6e6f26';
+
+      // Send data to n8n
+      const response = await fetch(n8nUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          reportId,
+          userId: user.id,
+          formData,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to trigger workflow');
+      }
+
+      // Navigate to generating page
+      navigate(`/generating/${reportId}`);
+      
+      toast({
+        title: "Success!",
+        description: "Your business plan is being generated.",
+      });
+    } catch (error) {
+      console.error('Submit error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit form. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const totalSteps = 7;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 py-8 px-4">
+      <div className="max-w-3xl mx-auto">
+        <div className="mb-8">
+          <ProgressIndicator currentStep={currentStep} totalSteps={totalSteps} />
+        </div>
+
+        <div className="bg-card border border-border rounded-2xl p-6 sm:p-8 shadow-xl">
+          {currentStep === 1 && (
+            <Step1Objective
+              data={formData}
+              updateData={updateData}
+              onNext={handleNext}
+            />
+          )}
+          
+          {currentStep === 2 && (
+            <Step2BasicInfo
+              data={formData}
+              updateData={updateData}
+              onNext={handleNext}
+              onPrev={handlePrev}
+              onLogout={handleLogout}
+              isLoading={isLoading}
+            />
+          )}
+          
+          {currentStep === 3 && (
+            <Step3CustomerGroups
+              data={formData}
+              updateData={updateData}
+              onNext={handleNext}
+              onPrev={handlePrev}
+            />
+          )}
+          
+          {currentStep === 4 && (
+            <Step4ProductsServices
+              data={formData}
+              updateData={updateData}
+              onNext={handleNext}
+              onPrev={handlePrev}
+            />
+          )}
+          
+          {currentStep === 5 && (
+            <Step5SuccessDrivers
+              data={formData}
+              updateData={updateData}
+              onNext={handleNext}
+              onPrev={handlePrev}
+            />
+          )}
+          
+          {currentStep === 6 && (
+            <Step6Investment
+              data={formData}
+              updateData={updateData}
+              onNext={handleNext}
+              onPrev={handlePrev}
+            />
+          )}
+          
+          {currentStep === 7 && (
+            <Step7Financial
+              data={formData}
+              updateData={updateData}
+              onPrev={handlePrev}
+              onSubmit={handleSubmit}
+              isLoading={isLoading}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
