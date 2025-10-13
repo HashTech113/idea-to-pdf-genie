@@ -1,4 +1,4 @@
-import { MultiStepBusinessPlanForm } from "@/components/MultiStepBusinessPlanForm";
+import MultiStepBusinessPlanForm from "@/components/MultiStepBusinessPlanForm";
 
 const BusinessPlan = () => {
   return <MultiStepBusinessPlanForm />;
