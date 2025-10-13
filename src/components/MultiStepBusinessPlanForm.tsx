@@ -90,73 +90,27 @@ export default function BusinessPlanForm() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const [useCorsProxy, setUseCorsProxy] = useState(false);
-
   const handleSubmit = async () => {
     if (!validate()) return;
 
     setIsLoading(true);
     setErrors({});
 
-    console.log("Sending data:", formData);
-
     try {
-      const { data, error } = await supabase.functions.invoke('proxy-n8n', {
-        body: formData,
-      });
+      // Generate a unique report ID
+      const reportId = `report_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Save form data to sessionStorage for the edge function to use
+      sessionStorage.setItem(`formData_${reportId}`, JSON.stringify(formData));
 
-      if (error) {
-        throw new Error(error.message || 'Failed to generate business plan.');
-      }
-
-      // Extract PDF URL from response - try multiple possible structures
-      let url = null;
-
-      if (typeof data === "string") {
-        // Check if it's a URL string
-        if (data.startsWith("http")) {
-          url = data;
-        }
-      } else if (data.pdfUrl) {
-        url = data.pdfUrl;
-      } else if (data.url) {
-        url = data.url;
-      } else if (data.pdf) {
-        url = data.pdf;
-      } else if (data.fileUrl) {
-        url = data.fileUrl;
-      } else if (data["pdf url"]) {
-        url = data["pdf url"];
-      } else if (data.pdfurl) {
-        url = data.pdfurl;
-      } else if (data.data && typeof data.data === "object") {
-        // Check nested data object
-        url = data.data.pdfUrl || data.data.url || data.data.pdf || data.data["pdf url"];
-      }
-
-      // Check if URL is still a template literal (n8n configuration issue)
-      if (url && typeof url === "string" && url.includes("={{") && url.includes("}}")) {
-        throw new Error(
-          'n8n workflow error: The PDF URL field is not configured correctly. In the "Respond to Webhook1" node, change the responseBody field to Expression mode and use: { "pdfUrl": {{ $json.pdfurl }} } (without quotes around the expression)',
-        );
-      }
-
-      console.log("Extracted URL:", url);
-
-      if (url && typeof url === "string" && (url.includes(".pdf") || url.includes("supabase"))) {
-        setPdfUrl(url);
-        setShowPreview(true);
-      } else {
-        throw new Error(
-          "Invalid or missing PDF URL in response. Full response: " + JSON.stringify(data).substring(0, 200),
-        );
-      }
+      // Navigate to generating page - it will handle triggering the edge function
+      window.location.href = `/generating/${reportId}`;
+      
     } catch (error) {
-      console.error("Full error:", error);
+      console.error("Error:", error);
       setErrors({
-        submit: error.message || "Failed to generate business plan. Please try again. Check console for details.",
+        submit: error.message || "Failed to start business plan generation. Please try again.",
       });
-    } finally {
       setIsLoading(false);
     }
   };
@@ -321,46 +275,10 @@ export default function BusinessPlanForm() {
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
               <p className="font-semibold">Error:</p>
               <p className="text-sm mt-1">{errors.submit}</p>
-              {errors.submit.includes("access-control-allow-origin") && (
-                <div className="mt-3 pt-3 border-t border-red-300">
-                  <p className="text-xs font-semibold mb-2">This is a CORS error from the n8n webhook.</p>
-                  <button
-                    onClick={() => setUseCorsProxy(!useCorsProxy)}
-                    className="text-xs bg-red-100 hover:bg-red-200 px-3 py-1 rounded"
-                  >
-                    {useCorsProxy ? "✓ Using CORS Proxy" : "Try CORS Proxy (Testing Only)"}
-                  </button>
-                  <p className="text-xs mt-2 text-red-600">
-                    <strong>Permanent Fix Required:</strong> Update your n8n workflow's "Respond to Webhook" node to fix
-                    the header name (remove the extra space).
-                  </p>
-                </div>
-              )}
             </div>
           )}
 
           <div className="flex flex-col gap-3">
-            {/* CORS Proxy Toggle - Always visible */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-blue-900">CORS Proxy</p>
-                  <p className="text-xs text-blue-700 mt-1">
-                    Enable this if you get CORS errors. This routes the request through a proxy.
-                  </p>
-                </div>
-                <button
-                  onClick={() => setUseCorsProxy(!useCorsProxy)}
-                  className={`px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${
-                    useCorsProxy
-                      ? "bg-green-500 text-white hover:bg-green-600"
-                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                  }`}
-                >
-                  {useCorsProxy ? "✓ Enabled" : "Disabled"}
-                </button>
-              </div>
-            </div>
 
             <Button
               onClick={handleSubmit}
