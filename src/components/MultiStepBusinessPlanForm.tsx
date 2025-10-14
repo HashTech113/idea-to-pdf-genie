@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { LogOut, Loader2, FileText } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 export const MultiStepBusinessPlanForm = () => {
   const [formData, setFormData] = useState({
@@ -75,7 +76,21 @@ export const MultiStepBusinessPlanForm = () => {
     setIsLoading(true);
     setErrors({});
 
-    console.log('Sending data:', formData);
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      setErrors({ submit: 'You must be logged in to generate a business plan' });
+      setIsLoading(false);
+      return;
+    }
+
+    const dataToSend = {
+      userId: user.id,
+      ...formData
+    };
+
+    console.log('Sending data:', dataToSend);
 
     // Test webhook URL
     const webhookUrl = 'https://hashirceo.app.n8n.cloud/webhook-test/generate-pdf';
@@ -93,7 +108,7 @@ export const MultiStepBusinessPlanForm = () => {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(dataToSend)
       });
 
       console.log('Response status:', response.status);
