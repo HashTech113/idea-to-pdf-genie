@@ -77,8 +77,8 @@ export const MultiStepBusinessPlanForm = () => {
 
     console.log('Sending data:', formData);
 
-    // Test webhook URL
-    const webhookUrl = 'https://hashirceo.app.n8n.cloud/webhook-test/2fcbe92b-1cd7-4ac9-987f-34dbaa1dc93f';
+    // Production webhook URL
+    const webhookUrl = 'https://hashirceo.app.n8n.cloud/webhook/2fcbe92b-1cd7-4ac9-987f-34dbaa1dc93f';
 
     // Use CORS proxy if enabled (for testing only)
     const finalUrl = useCorsProxy
