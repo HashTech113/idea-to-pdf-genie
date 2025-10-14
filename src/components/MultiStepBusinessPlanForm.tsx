@@ -75,15 +75,7 @@ export const MultiStepBusinessPlanForm = () => {
     setIsLoading(true);
     setErrors({});
 
-    // Create URL-safe filename
-    const safeName = formData.businessName.replace(/\s+/g, "_") + ".pdf";
-
-    const dataToSend = {
-      ...formData,
-      safeFileName: safeName
-    };
-
-    console.log('Sending data:', dataToSend);
+    console.log('Sending data:', formData);
 
     // Production webhook URL
     const webhookUrl = 'https://hashirceo.app.n8n.cloud/webhook/2fcbe92b-1cd7-4ac9-987f-34dbaa1dc93f';
@@ -101,7 +93,7 @@ export const MultiStepBusinessPlanForm = () => {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: JSON.stringify(dataToSend)
+        body: JSON.stringify(formData)
       });
 
       console.log('Response status:', response.status);
