@@ -1,10 +1,13 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { LogOut, Loader2, FileText } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 export type FormData = {
   businessName: string;
@@ -29,6 +32,8 @@ export type FormData = {
 };
 
 export default function BusinessPlanForm() {
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
   const [formData, setFormData] = useState({
     businessName: "",
     businessDescription: "",
@@ -99,51 +104,20 @@ export default function BusinessPlanForm() {
 
     console.log("Sending data:", formData);
 
-    // Original webhook URL
-    const webhookUrl = "https://hashirceo.app.n8n.cloud/webhook/2fcbe92b-1cd7-4ac9-987f-34dbaa1dc93f";
-
-    // Use CORS proxy if enabled (for testing only)
-    const finalUrl = useCorsProxy ? `https://corsproxy.io/?${encodeURIComponent(webhookUrl)}` : webhookUrl;
-
     try {
-      const response = await fetch(finalUrl, {
-        method: "POST",
-        mode: "cors",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify(formData),
+      // Call the Supabase Edge Function proxy
+      const { data, error } = await supabase.functions.invoke('proxy-n8n', {
+        body: formData,
       });
 
-      console.log("Response status:", response.status);
-      console.log("Response headers:", Object.fromEntries(response.headers.entries()));
+      console.log("Response from edge function:", data);
 
-      // Try to get response even if status is not OK
-      const responseText = await response.text();
-      console.log("Response text:", responseText);
-
-      let data;
-      try {
-        data = JSON.parse(responseText);
-        console.log("Parsed response:", data);
-      } catch (e) {
-        // If response is not JSON, treat it as plain text URL
-        data = responseText;
-        console.log("Response is plain text:", data);
+      if (error) {
+        throw new Error(error.message || 'Failed to generate business plan');
       }
 
-      // Check if we got an error response
-      if (!response.ok) {
-        // Check if the error response contains a PDF URL despite the error
-        if (typeof data === "object" && (data.pdfUrl || data.url)) {
-          console.log("Got PDF URL despite error status");
-          // Continue to extract URL
-        } else {
-          throw new Error(
-            `Server error (${response.status}): ${typeof data === "object" ? data.message : responseText}`,
-          );
-        }
+      if (!data) {
+        throw new Error('No response from server');
       }
 
       // Extract PDF URL from response - try multiple possible structures
@@ -198,9 +172,9 @@ export default function BusinessPlanForm() {
     }
   };
 
-  const handleLogout = () => {
-    // Implement logout logic
-    console.log("Logout clicked");
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/");
   };
 
   const handleBack = () => {
