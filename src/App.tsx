@@ -12,7 +12,6 @@ import OTPSignUp from "./pages/OTPSignUp";
 import BusinessPlan from "./pages/BusinessPlan";
 import Pricing from "./pages/Pricing";
 import Generating from "./pages/Generating";
-import Preview from "./pages/Preview";
 
 import NotFound from "./pages/NotFound";
 
@@ -36,8 +35,6 @@ const App = () => (
             } />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/generating/:reportId" element={<Generating />} />
-          <Route path="/preview/:reportId" element={<Preview />} />
-          <Route path="/generating/:reportId" element={<Generating />} />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

@@ -57,6 +57,3 @@ verify_jwt = false
 
 [functions.update-pdf-status]
 verify_jwt = false
-
-[functions.proxy-n8n]
-verify_jwt = false
