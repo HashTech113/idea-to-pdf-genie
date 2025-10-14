@@ -73,7 +73,7 @@ serve(async (req) => {
         // Include callback URL for n8n to call when done
         const callbackUrl = `${supabaseUrl}/functions/v1/update-pdf-status`;
 
-        const response = await fetch(n8nUrl, {
+        const response = await n8nUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -83,8 +83,8 @@ serve(async (req) => {
             reportId,
             formData,
             callbackUrl,
-            supabaseUrl,
-            supabaseKey,
+            supabaseUrl: supabaseUrl,
+            supabaseKey: supabaseKey,
           }),
           signal: AbortSignal.timeout(10000), // 10 second timeout just to trigger the webhook
         });
@@ -126,8 +126,8 @@ serve(async (req) => {
       }
     };
 
-    // Trigger the webhook without blocking the response
-    webhookTask();
+    // Use EdgeRuntime.waitUntil to keep the function alive for the background task
+    EdgeRuntime.waitUntil(webhookTask());
 
     console.log("PDF generation triggered for reportId:", reportId);
 
