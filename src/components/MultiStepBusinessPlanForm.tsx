@@ -77,8 +77,8 @@ export const MultiStepBusinessPlanForm = () => {
 
     console.log('Sending data:', formData);
 
-    // Production webhook URL
-    const webhookUrl = 'https://hashirceo.app.n8n.cloud/webhook/generate-pdf';
+    // Test webhook URL
+    const webhookUrl = 'https://hashirceo.app.n8n.cloud/webhook-test/generate-pdf';
 
     // Use CORS proxy if enabled (for testing only)
     const finalUrl = useCorsProxy
