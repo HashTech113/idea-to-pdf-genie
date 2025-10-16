@@ -1,11 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { LogOut, Loader2, FileText } from 'lucide-react';
+import { LogOut, Loader2, FileText, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
+
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 export const MultiStepBusinessPlanForm = () => {
   const [formData, setFormData] = useState({
@@ -16,6 +23,24 @@ export const MultiStepBusinessPlanForm = () => {
     offeringType: '',
     deliveryMethod: ''
   });
+
+  useEffect(() => {
+    const fetchUserPlan = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('plan')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (profile) {
+          setUserPlan(profile.plan as 'free' | 'pro');
+        }
+      }
+    };
+    fetchUserPlan();
+  }, []);
 
   const [errors, setErrors] = useState<{
     businessName?: string;
@@ -29,6 +54,10 @@ export const MultiStepBusinessPlanForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [pdfUrl, setPdfUrl] = useState('');
   const [showPreview, setShowPreview] = useState(false);
+  const [userPlan, setUserPlan] = useState<'free' | 'pro'>('free');
+  const [numPages, setNumPages] = useState<number>(0);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   const updateData = (data: any) => {
     setFormData(prev => ({ ...prev, ...data }));
@@ -197,24 +226,41 @@ export const MultiStepBusinessPlanForm = () => {
     setPdfUrl('');
   };
 
+  const handleDownload = () => {
+    if (userPlan === 'free') {
+      toast({
+        title: "Upgrade Required",
+        description: "Download the full PDF by upgrading to Pro",
+        variant: "destructive",
+      });
+      setTimeout(() => navigate('/pricing'), 1500);
+    } else {
+      window.open(pdfUrl, '_blank');
+    }
+  };
+
+  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+    setNumPages(numPages);
+  };
+
   if (showPreview && pdfUrl) {
+    const pagesToShow = userPlan === 'free' ? 2 : numPages;
+    
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
         <div className="max-w-7xl mx-auto">
           <div className="bg-white rounded-2xl shadow-xl p-6 mb-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                <FileText className="h-6 w-6 text-blue-600" />
-                Your Business Plan
-              </h2>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                  <FileText className="h-6 w-6 text-blue-600" />
+                  Your Business Plan {userPlan === 'free' && '(Preview)'}
+                </h2>
+                {userPlan === 'free' && (
+                  <p className="text-sm text-gray-600 mt-1">Showing first 2 pages. Upgrade to Pro to view and download the full PDF.</p>
+                )}
+              </div>
               <div className="flex gap-3">
-                <Button
-                  onClick={() => window.open(pdfUrl, '_blank')}
-                  variant="outline"
-                  className="gap-2"
-                >
-                  Open in New Tab
-                </Button>
                 <Button
                   onClick={handleBack}
                   variant="outline"
@@ -225,12 +271,40 @@ export const MultiStepBusinessPlanForm = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden" style={{ height: 'calc(100vh - 180px)' }}>
-            <iframe
-              src={pdfUrl}
-              className="w-full h-full border-0"
-              title="Business Plan Preview"
-            />
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden p-6">
+            <div className="flex flex-col items-center">
+              <Document
+                file={pdfUrl}
+                onLoadSuccess={onDocumentLoadSuccess}
+                className="max-w-full"
+              >
+                {Array.from(new Array(pagesToShow), (el, index) => (
+                  <Page
+                    key={`page_${index + 1}`}
+                    pageNumber={index + 1}
+                    className="mb-4 shadow-lg"
+                    width={Math.min(window.innerWidth - 100, 800)}
+                  />
+                ))}
+              </Document>
+              
+              {userPlan === 'free' && numPages > 2 && (
+                <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200 text-center">
+                  <p className="text-sm text-gray-700 mb-2">
+                    {numPages - 2} more pages available in the full PDF
+                  </p>
+                </div>
+              )}
+
+              <Button
+                onClick={handleDownload}
+                className="mt-6 w-full max-w-md h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 gap-2"
+                disabled={userPlan === 'free'}
+              >
+                <Download className="h-5 w-5" />
+                {userPlan === 'free' ? 'Upgrade to Download Full PDF' : 'Download Full PDF'}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
