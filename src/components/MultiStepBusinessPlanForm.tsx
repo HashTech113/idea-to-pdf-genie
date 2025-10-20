@@ -121,6 +121,7 @@ export const MultiStepBusinessPlanForm = () => {
               setShowPreview(true);
               setIsPolling(false);
               setIsLoading(false);
+              supabase.removeChannel(channel);
               toast({
                 title: "Business Plan Ready!",
                 description: "Your business plan has been generated successfully.",
