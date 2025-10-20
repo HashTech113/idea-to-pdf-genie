@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -57,6 +57,8 @@ export const MultiStepBusinessPlanForm = () => {
   const [userPlan, setUserPlan] = useState<'free' | 'pro'>('free');
   const [numPages, setNumPages] = useState<number>(0);
   const [isPolling, setIsPolling] = useState(false);
+  const fallbackPollingRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -121,7 +123,12 @@ export const MultiStepBusinessPlanForm = () => {
               setShowPreview(true);
               setIsPolling(false);
               setIsLoading(false);
+              
+              // Clean up all timeouts and subscriptions
+              if (fallbackPollingRef.current) clearInterval(fallbackPollingRef.current);
+              if (timeoutRef.current) clearTimeout(timeoutRef.current);
               supabase.removeChannel(channel);
+              
               toast({
                 title: "Business Plan Ready!",
                 description: "Your business plan has been generated successfully.",
@@ -131,8 +138,60 @@ export const MultiStepBusinessPlanForm = () => {
         )
         .subscribe();
 
+      // Fallback polling after 15 seconds
+      const fallbackTimeout = setTimeout(async () => {
+        const pollInterval = setInterval(async () => {
+          const { data } = await supabase
+            .from('user_business')
+            .select('pdf_url')
+            .eq('user_id', user.id)
+            .eq('business_idea', formData.businessName)
+            .maybeSingle();
+
+          if (data && data.pdf_url) {
+            setPdfUrl(data.pdf_url);
+            setShowPreview(true);
+            setIsPolling(false);
+            setIsLoading(false);
+            
+            // Clean up
+            clearInterval(pollInterval);
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            supabase.removeChannel(channel);
+            
+            toast({
+              title: "Business Plan Ready!",
+              description: "Your business plan has been generated successfully.",
+            });
+          }
+        }, 4000);
+        
+        fallbackPollingRef.current = pollInterval;
+      }, 15000);
+
+      // 5-minute timeout
+      timeoutRef.current = setTimeout(() => {
+        setIsLoading(false);
+        setIsPolling(false);
+        if (fallbackPollingRef.current) clearInterval(fallbackPollingRef.current);
+        supabase.removeChannel(channel);
+        
+        setErrors({
+          submit: 'Your PDF is taking longer than expected. Please refresh and try again.'
+        });
+        
+        toast({
+          title: "Timeout",
+          description: "PDF generation is taking longer than expected. Please try again.",
+          variant: "destructive",
+        });
+      }, 300000); // 5 minutes
+
       return () => {
         supabase.removeChannel(channel);
+        if (fallbackPollingRef.current) clearInterval(fallbackPollingRef.current);
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        clearTimeout(fallbackTimeout);
       };
     };
 
@@ -210,6 +269,8 @@ export const MultiStepBusinessPlanForm = () => {
     setShowPreview(false);
     setPdfUrl('');
     setIsPolling(false);
+    if (fallbackPollingRef.current) clearInterval(fallbackPollingRef.current);
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
   };
 
   const handleDownload = () => {
