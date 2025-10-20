@@ -38,51 +38,6 @@ export type Database = {
         }
         Relationships: []
       }
-      jobs: {
-        Row: {
-          completed_at: string | null
-          created_at: string
-          error_message: string | null
-          form_data: Json
-          full_pdf_path: string | null
-          id: string
-          pdf_path: string | null
-          preview_pdf_path: string | null
-          report_id: string | null
-          status: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          completed_at?: string | null
-          created_at?: string
-          error_message?: string | null
-          form_data: Json
-          full_pdf_path?: string | null
-          id?: string
-          pdf_path?: string | null
-          preview_pdf_path?: string | null
-          report_id?: string | null
-          status?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          completed_at?: string | null
-          created_at?: string
-          error_message?: string | null
-          form_data?: Json
-          full_pdf_path?: string | null
-          id?: string
-          pdf_path?: string | null
-          preview_pdf_path?: string | null
-          report_id?: string | null
-          status?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           created_at: string
@@ -106,6 +61,33 @@ export type Database = {
           name?: string | null
           plan?: string | null
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_business: {
+        Row: {
+          business_idea: string
+          created_at: string
+          id: number
+          location: string
+          pdf_url: string
+          user_id: string
+        }
+        Insert: {
+          business_idea: string
+          created_at?: string
+          id?: number
+          location: string
+          pdf_url: string
+          user_id?: string
+        }
+        Update: {
+          business_idea?: string
+          created_at?: string
+          id?: number
+          location?: string
+          pdf_url?: string
           user_id?: string
         }
         Relationships: []
