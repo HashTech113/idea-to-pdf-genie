@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -56,6 +56,8 @@ export const MultiStepBusinessPlanForm = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [userPlan, setUserPlan] = useState<'free' | 'pro'>('free');
   const [numPages, setNumPages] = useState<number>(0);
+  const [isPolling, setIsPolling] = useState(false);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -97,7 +99,50 @@ export const MultiStepBusinessPlanForm = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const [useCorsProxy, setUseCorsProxy] = useState(false);
+  // Polling effect
+  useEffect(() => {
+    const pollForPdfUrl = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('user_business')
+        .select('pdf_url')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error polling for PDF:', error);
+        return;
+      }
+
+      if (data?.pdf_url) {
+        setPdfUrl(data.pdf_url);
+        setShowPreview(true);
+        setIsPolling(false);
+        setIsLoading(false);
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+        }
+        toast({
+          title: "Business Plan Ready!",
+          description: "Your business plan has been generated successfully.",
+        });
+      }
+    };
+
+    if (isPolling) {
+      pollingIntervalRef.current = setInterval(pollForPdfUrl, 3000);
+      return () => {
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+        }
+      };
+    }
+  }, [isPolling, toast]);
 
   const handleSubmit = async () => {
     if (!validate()) return;
@@ -116,102 +161,42 @@ export const MultiStepBusinessPlanForm = () => {
 
     const dataToSend = {
       userId: user.id,
-      ...formData
+      businessName: formData.businessName,
+      businessDescription: formData.businessDescription,
+      numberOfEmployees: formData.numberOfEmployees,
+      customerLocation: formData.customerLocation
     };
 
     console.log('Sending data:', dataToSend);
 
-    // Test webhook URL
     const webhookUrl = 'https://hashirceo.app.n8n.cloud/webhook-test/generate-pdf';
 
-    // Use CORS proxy if enabled (for testing only)
-    const finalUrl = useCorsProxy
-      ? `https://corsproxy.io/?${encodeURIComponent(webhookUrl)}`
-      : webhookUrl;
-
     try {
-      const response = await fetch(finalUrl, {
+      const response = await fetch(webhookUrl, {
         method: 'POST',
-        mode: 'cors',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
         },
         body: JSON.stringify(dataToSend)
       });
 
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+      const data = await response.json();
+      console.log('Webhook response:', data);
 
-      // Try to get response even if status is not OK
-      const responseText = await response.text();
-      console.log('Response text:', responseText);
-
-      let data;
-      try {
-        data = JSON.parse(responseText);
-        console.log('Parsed response:', data);
-      } catch (e) {
-        // If response is not JSON, treat it as plain text URL
-        data = responseText;
-        console.log('Response is plain text:', data);
-      }
-
-      // Check if we got an error response
-      if (!response.ok) {
-        // Check if the error response contains a PDF URL despite the error
-        if (typeof data === 'object' && (data.pdfUrl || data.url)) {
-          console.log('Got PDF URL despite error status');
-          // Continue to extract URL
-        } else {
-          throw new Error(`Server error (${response.status}): ${typeof data === 'object' ? data.message : responseText}`);
-        }
-      }
-
-      // Extract PDF URL from response - try multiple possible structures
-      let url = null;
-
-      if (typeof data === 'string') {
-        // Check if it's a URL string
-        if (data.startsWith('http')) {
-          url = data;
-        }
-      } else if (data.pdfUrl) {
-        url = data.pdfUrl;
-      } else if (data.url) {
-        url = data.url;
-      } else if (data.pdf) {
-        url = data.pdf;
-      } else if (data.fileUrl) {
-        url = data.fileUrl;
-      } else if (data['pdf url']) {
-        url = data['pdf url'];
-      } else if (data.pdfurl) {
-        url = data.pdfurl;
-      } else if (data.data && typeof data.data === 'object') {
-        // Check nested data object
-        url = data.data.pdfUrl || data.data.url || data.data.pdf || data.data['pdf url'];
-      }
-
-      // Check if URL is still a template literal (n8n configuration issue)
-      if (url && typeof url === 'string' && url.includes('={{') && url.includes('}}')) {
-        throw new Error('n8n workflow error: The PDF URL field is not configured correctly. In the "Respond to Webhook1" node, change the responseBody field to Expression mode and use: { "pdfUrl": {{ $json.pdfurl }} } (without quotes around the expression)');
-      }
-
-      console.log('Extracted URL:', url);
-
-      if (url && typeof url === 'string' && (url.includes('.pdf') || url.includes('supabase'))) {
-        setPdfUrl(url);
-        setShowPreview(true);
+      if (data.status === 'processing') {
+        setIsPolling(true);
+        toast({
+          title: "Generating your business plan...",
+          description: "This may take a few moments.",
+        });
       } else {
-        throw new Error('Invalid or missing PDF URL in response. Full response: ' + JSON.stringify(data).substring(0, 200));
+        throw new Error('Unexpected response from webhook');
       }
     } catch (error: any) {
-      console.error('Full error:', error);
+      console.error('Error:', error);
       setErrors({
-        submit: error.message || 'Failed to generate business plan. Please try again. Check console for details.'
+        submit: error.message || 'Failed to generate business plan. Please try again.'
       });
-    } finally {
       setIsLoading(false);
     }
   };
@@ -224,6 +209,11 @@ export const MultiStepBusinessPlanForm = () => {
   const handleBack = () => {
     setShowPreview(false);
     setPdfUrl('');
+    setIsPolling(false);
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
   };
 
   const handleDownload = () => {
@@ -449,45 +439,20 @@ export const MultiStepBusinessPlanForm = () => {
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
               <p className="font-semibold">Error:</p>
               <p className="text-sm mt-1">{errors.submit}</p>
-              {errors.submit.includes('access-control-allow-origin') && (
-                <div className="mt-3 pt-3 border-t border-red-300">
-                  <p className="text-xs font-semibold mb-2">This is a CORS error from the n8n webhook.</p>
-                  <button
-                    onClick={() => setUseCorsProxy(!useCorsProxy)}
-                    className="text-xs bg-red-100 hover:bg-red-200 px-3 py-1 rounded"
-                  >
-                    {useCorsProxy ? '✓ Using CORS Proxy' : 'Try CORS Proxy (Testing Only)'}
-                  </button>
-                  <p className="text-xs mt-2 text-red-600">
-                    <strong>Permanent Fix Required:</strong> Update your n8n workflow's "Respond to Webhook" node to fix the header name (remove the extra space).
-                  </p>
-                </div>
-              )}
+            </div>
+          )}
+
+          {isPolling && (
+            <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg">
+              <p className="font-semibold flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Generating your business plan...
+              </p>
+              <p className="text-sm mt-1">This may take a few moments. Please wait.</p>
             </div>
           )}
 
           <div className="flex flex-col gap-3">
-            {/* CORS Proxy Toggle - Always visible */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-blue-900">CORS Proxy</p>
-                  <p className="text-xs text-blue-700 mt-1">
-                    Enable this if you get CORS errors. This routes the request through a proxy.
-                  </p>
-                </div>
-                <button
-                  onClick={() => setUseCorsProxy(!useCorsProxy)}
-                  className={`px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${useCorsProxy
-                    ? 'bg-green-500 text-white hover:bg-green-600'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
-                >
-                  {useCorsProxy ? '✓ Enabled' : 'Disabled'}
-                </button>
-              </div>
-            </div>
-
             <Button
               onClick={handleSubmit}
               disabled={isLoading}
