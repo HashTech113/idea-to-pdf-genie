@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -57,7 +57,6 @@ export const MultiStepBusinessPlanForm = () => {
   const [userPlan, setUserPlan] = useState<'free' | 'pro'>('free');
   const [numPages, setNumPages] = useState<number>(0);
   const [isPolling, setIsPolling] = useState(false);
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -99,50 +98,47 @@ export const MultiStepBusinessPlanForm = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Polling effect
+  // Realtime subscription effect
   useEffect(() => {
-    const pollForPdfUrl = async () => {
+    if (!isPolling) return;
+
+    const setupRealtimeSubscription = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data, error } = await supabase
-        .from('user_business')
-        .select('pdf_url, business_idea')
-        .eq('user_id', user.id)
-        .eq('business_idea', formData.businessName)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const channel = supabase
+        .channel('pdf-updates')
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'user_business' },
+          (payload: any) => {
+            if (
+              payload.new.user_id === user.id &&
+              payload.new.business_idea === formData.businessName &&
+              payload.new.pdf_url
+            ) {
+              setPdfUrl(payload.new.pdf_url);
+              setShowPreview(true);
+              setIsPolling(false);
+              setIsLoading(false);
+              toast({
+                title: "Business Plan Ready!",
+                description: "Your business plan has been generated successfully.",
+              });
+            }
+          }
+        )
+        .subscribe();
 
-      if (error) {
-        console.error('Error polling for PDF:', error);
-        return;
-      }
-
-      if (data?.pdf_url) {
-        setPdfUrl(data.pdf_url);
-        setShowPreview(true);
-        setIsPolling(false);
-        setIsLoading(false);
-        if (pollingIntervalRef.current) {
-          clearInterval(pollingIntervalRef.current);
-          pollingIntervalRef.current = null;
-        }
-        toast({
-          title: "Business Plan Ready!",
-          description: "Your business plan has been generated successfully.",
-        });
-      }
+      return () => {
+        supabase.removeChannel(channel);
+      };
     };
 
-    if (isPolling) {
-      pollingIntervalRef.current = setInterval(pollForPdfUrl, 3000);
-      return () => {
-        if (pollingIntervalRef.current) {
-          clearInterval(pollingIntervalRef.current);
-        }
-      };
-    }
+    const cleanup = setupRealtimeSubscription();
+    return () => {
+      cleanup.then((cleanupFn) => cleanupFn?.());
+    };
   }, [isPolling, toast, formData.businessName]);
 
   const handleSubmit = async () => {
@@ -213,10 +209,6 @@ export const MultiStepBusinessPlanForm = () => {
     setShowPreview(false);
     setPdfUrl('');
     setIsPolling(false);
-    if (pollingIntervalRef.current) {
-      clearInterval(pollingIntervalRef.current);
-      pollingIntervalRef.current = null;
-    }
   };
 
   const handleDownload = () => {
