@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { LogOut, Loader2, FileText } from 'lucide-react';
+import { LogOut, Loader2, FileText, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 export const MultiStepBusinessPlanForm = () => {
   const [formData, setFormData] = useState({
@@ -29,6 +30,10 @@ export const MultiStepBusinessPlanForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [pdfUrl, setPdfUrl] = useState('');
   const [showPreview, setShowPreview] = useState(false);
+  const [jobStatus, setJobStatus] = useState<'idle' | 'pending' | 'processing' | 'completed' | 'failed'>('idle');
+  const [currentReportId, setCurrentReportId] = useState<string | null>(null);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const { toast } = useToast();
 
   const updateData = (data: any) => {
     setFormData(prev => ({ ...prev, ...data }));
@@ -68,7 +73,83 @@ export const MultiStepBusinessPlanForm = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const [useCorsProxy, setUseCorsProxy] = useState(false);
+  // Poll job status
+  useEffect(() => {
+    if (currentReportId && (jobStatus === 'pending' || jobStatus === 'processing')) {
+      const pollJobStatus = async () => {
+        const { data, error } = await supabase
+          .from('jobs')
+          .select('status, pdf_path, preview_pdf_path, full_pdf_path, error_message')
+          .eq('report_id', currentReportId)
+          .single();
+
+        if (error) {
+          console.error('Error polling job status:', error);
+          return;
+        }
+
+        if (data) {
+          console.log('Job status update:', data.status);
+          setJobStatus(data.status as any);
+
+          if (data.status === 'completed') {
+            // Clear polling interval
+            if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current);
+              pollingIntervalRef.current = null;
+            }
+
+            // Use preview_pdf_path if available, otherwise fallback to pdf_path
+            const pdfPath = data.preview_pdf_path || data.pdf_path;
+            
+            if (pdfPath) {
+              // Get public URL from storage
+              const { data: urlData } = supabase.storage
+                .from('business-plans')
+                .getPublicUrl(pdfPath);
+              
+              setPdfUrl(urlData.publicUrl);
+              setShowPreview(true);
+              setIsLoading(false);
+              
+              toast({
+                title: "Success!",
+                description: "Your business plan is ready.",
+              });
+            }
+          } else if (data.status === 'failed') {
+            // Clear polling interval
+            if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current);
+              pollingIntervalRef.current = null;
+            }
+
+            setIsLoading(false);
+            setErrors({ submit: data.error_message || 'PDF generation failed. Please try again.' });
+            
+            toast({
+              title: "Error",
+              description: data.error_message || 'PDF generation failed.',
+              variant: "destructive",
+            });
+          }
+        }
+      };
+
+      // Poll immediately
+      pollJobStatus();
+
+      // Then poll every 5 seconds
+      pollingIntervalRef.current = setInterval(pollJobStatus, 5000);
+
+      // Cleanup on unmount
+      return () => {
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+        }
+      };
+    }
+  }, [currentReportId, jobStatus, toast]);
 
   const handleSubmit = async () => {
     if (!validate()) return;
@@ -76,114 +157,82 @@ export const MultiStepBusinessPlanForm = () => {
     setIsLoading(true);
     setErrors({});
 
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      setErrors({ submit: 'You must be logged in to generate a business plan' });
-      setIsLoading(false);
-      return;
-    }
-
-    const dataToSend = {
-      userId: user.id,
-      ...formData
-    };
-
-    console.log('Sending data:', dataToSend);
-
-    // Test webhook URL
-    const webhookUrl = 'https://hashirceo.app.n8n.cloud/webhook-test/generate-pdf';
-
-    // Use CORS proxy if enabled (for testing only)
-    const finalUrl = useCorsProxy
-      ? `https://corsproxy.io/?${encodeURIComponent(webhookUrl)}`
-      : webhookUrl;
-
     try {
-      const response = await fetch(finalUrl, {
-        method: 'POST',
-        mode: 'cors',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        setErrors({ submit: 'You must be logged in to generate a business plan' });
+        setIsLoading(false);
+        return;
+      }
+
+      // Generate a unique report ID
+      const reportId = crypto.randomUUID();
+      setCurrentReportId(reportId);
+      setJobStatus('pending');
+
+      console.log('Creating job with reportId:', reportId);
+
+      // Insert job record in database
+      const { error: insertError } = await supabase
+        .from('jobs')
+        .insert({
+          report_id: reportId,
+          user_id: user.id,
+          status: 'pending',
+          form_data: formData,
+        });
+
+      if (insertError) {
+        throw new Error(`Failed to create job: ${insertError.message}`);
+      }
+
+      // Get session for authorization
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('No active session');
+      }
+
+      // Call the edge function
+      const { data, error } = await supabase.functions.invoke('generate-business-plan', {
+        body: {
+          userId: user.id,
+          reportId,
+          ...formData,
         },
-        body: JSON.stringify(dataToSend)
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       });
 
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-
-      // Try to get response even if status is not OK
-      const responseText = await response.text();
-      console.log('Response text:', responseText);
-
-      let data;
-      try {
-        data = JSON.parse(responseText);
-        console.log('Parsed response:', data);
-      } catch (e) {
-        // If response is not JSON, treat it as plain text URL
-        data = responseText;
-        console.log('Response is plain text:', data);
+      if (error) {
+        throw new Error(error.message || 'Failed to trigger PDF generation');
       }
 
-      // Check if we got an error response
-      if (!response.ok) {
-        // Check if the error response contains a PDF URL despite the error
-        if (typeof data === 'object' && (data.pdfUrl || data.url)) {
-          console.log('Got PDF URL despite error status');
-          // Continue to extract URL
-        } else {
-          throw new Error(`Server error (${response.status}): ${typeof data === 'object' ? data.message : responseText}`);
-        }
-      }
+      console.log('Edge function response:', data);
 
-      // Extract PDF URL from response - try multiple possible structures
-      let url = null;
+      toast({
+        title: "Processing...",
+        description: "Your business plan is being generated. This may take a few minutes.",
+      });
 
-      if (typeof data === 'string') {
-        // Check if it's a URL string
-        if (data.startsWith('http')) {
-          url = data;
-        }
-      } else if (data.pdfUrl) {
-        url = data.pdfUrl;
-      } else if (data.url) {
-        url = data.url;
-      } else if (data.pdf) {
-        url = data.pdf;
-      } else if (data.fileUrl) {
-        url = data.fileUrl;
-      } else if (data['pdf url']) {
-        url = data['pdf url'];
-      } else if (data.pdfurl) {
-        url = data.pdfurl;
-      } else if (data.data && typeof data.data === 'object') {
-        // Check nested data object
-        url = data.data.pdfUrl || data.data.url || data.data.pdf || data.data['pdf url'];
-      }
-
-      // Check if URL is still a template literal (n8n configuration issue)
-      if (url && typeof url === 'string' && url.includes('={{') && url.includes('}}')) {
-        throw new Error('n8n workflow error: The PDF URL field is not configured correctly. In the "Respond to Webhook1" node, change the responseBody field to Expression mode and use: { "pdfUrl": {{ $json.pdfurl }} } (without quotes around the expression)');
-      }
-
-      console.log('Extracted URL:', url);
-
-      if (url && typeof url === 'string' && (url.includes('.pdf') || url.includes('supabase'))) {
-        setPdfUrl(url);
-        setShowPreview(true);
-      } else {
-        throw new Error('Invalid or missing PDF URL in response. Full response: ' + JSON.stringify(data).substring(0, 200));
-      }
+      // The polling will handle the rest
     } catch (error: any) {
       console.error('Full error:', error);
-      setErrors({
-        submit: error.message || 'Failed to generate business plan. Please try again. Check console for details.'
-      });
-    } finally {
+      setJobStatus('idle');
+      setCurrentReportId(null);
       setIsLoading(false);
+      setErrors({
+        submit: error.message || 'Failed to generate business plan. Please try again.'
+      });
+      
+      toast({
+        title: "Error",
+        description: error.message || 'Failed to start PDF generation.',
+        variant: "destructive",
+      });
     }
   };
 
@@ -195,6 +244,8 @@ export const MultiStepBusinessPlanForm = () => {
   const handleBack = () => {
     setShowPreview(false);
     setPdfUrl('');
+    setJobStatus('idle');
+    setCurrentReportId(null);
   };
 
   if (showPreview && pdfUrl) {
@@ -371,48 +422,31 @@ export const MultiStepBusinessPlanForm = () => {
             </div>
           </div>
 
+          {/* Processing Status */}
+          {(jobStatus === 'pending' || jobStatus === 'processing') && (
+            <div className="bg-blue-50 border border-blue-200 text-blue-900 px-4 py-3 rounded-lg">
+              <div className="flex items-center gap-3">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <div>
+                  <p className="font-semibold">
+                    {jobStatus === 'pending' ? 'Queued' : 'Generating PDF...'}
+                  </p>
+                  <p className="text-sm mt-1">
+                    Your business plan is being generated. This may take a few minutes.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {errors.submit && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
               <p className="font-semibold">Error:</p>
               <p className="text-sm mt-1">{errors.submit}</p>
-              {errors.submit.includes('access-control-allow-origin') && (
-                <div className="mt-3 pt-3 border-t border-red-300">
-                  <p className="text-xs font-semibold mb-2">This is a CORS error from the n8n webhook.</p>
-                  <button
-                    onClick={() => setUseCorsProxy(!useCorsProxy)}
-                    className="text-xs bg-red-100 hover:bg-red-200 px-3 py-1 rounded"
-                  >
-                    {useCorsProxy ? '✓ Using CORS Proxy' : 'Try CORS Proxy (Testing Only)'}
-                  </button>
-                  <p className="text-xs mt-2 text-red-600">
-                    <strong>Permanent Fix Required:</strong> Update your n8n workflow's "Respond to Webhook" node to fix the header name (remove the extra space).
-                  </p>
-                </div>
-              )}
             </div>
           )}
 
           <div className="flex flex-col gap-3">
-            {/* CORS Proxy Toggle - Always visible */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-blue-900">CORS Proxy</p>
-                  <p className="text-xs text-blue-700 mt-1">
-                    Enable this if you get CORS errors. This routes the request through a proxy.
-                  </p>
-                </div>
-                <button
-                  onClick={() => setUseCorsProxy(!useCorsProxy)}
-                  className={`px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${useCorsProxy
-                    ? 'bg-green-500 text-white hover:bg-green-600'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
-                >
-                  {useCorsProxy ? '✓ Enabled' : 'Disabled'}
-                </button>
-              </div>
-            </div>
 
             <Button
               onClick={handleSubmit}

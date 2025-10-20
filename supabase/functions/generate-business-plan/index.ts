@@ -73,7 +73,7 @@ serve(async (req) => {
         // Include callback URL for n8n to call when done
         const callbackUrl = `${supabaseUrl}/functions/v1/update-pdf-status`;
 
-        const response = await n8nUrl, {
+        const response = await fetch(n8nUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
