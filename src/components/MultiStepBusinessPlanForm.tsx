@@ -107,8 +107,9 @@ export const MultiStepBusinessPlanForm = () => {
 
       const { data, error } = await supabase
         .from('user_business')
-        .select('pdf_url')
+        .select('pdf_url, business_idea')
         .eq('user_id', user.id)
+        .eq('business_idea', formData.businessDescription)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -142,7 +143,7 @@ export const MultiStepBusinessPlanForm = () => {
         }
       };
     }
-  }, [isPolling, toast]);
+  }, [isPolling, toast, formData.businessDescription]);
 
   const handleSubmit = async () => {
     if (!validate()) return;
@@ -185,9 +186,10 @@ export const MultiStepBusinessPlanForm = () => {
 
       if (data.status === 'processing') {
         setIsPolling(true);
+        // Keep loading state true while polling
         toast({
-          title: "Generating your business plan...",
-          description: "This may take a few moments.",
+          title: "PDF Generation Started",
+          description: "We're generating your business plan. This may take a few moments.",
         });
       } else {
         throw new Error('Unexpected response from webhook');
@@ -446,9 +448,9 @@ export const MultiStepBusinessPlanForm = () => {
             <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg">
               <p className="font-semibold flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Generating your business plan...
+                Generating PDF...
               </p>
-              <p className="text-sm mt-1">This may take a few moments. Please wait.</p>
+              <p className="text-sm mt-1">Please wait while we create your business plan. This may take a few moments.</p>
             </div>
           )}
 
