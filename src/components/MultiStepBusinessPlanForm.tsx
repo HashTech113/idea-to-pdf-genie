@@ -109,7 +109,7 @@ export const MultiStepBusinessPlanForm = () => {
         .from('user_business')
         .select('pdf_url, business_idea')
         .eq('user_id', user.id)
-        .eq('business_idea', formData.businessDescription)
+        .eq('business_idea', formData.businessName)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -143,7 +143,7 @@ export const MultiStepBusinessPlanForm = () => {
         }
       };
     }
-  }, [isPolling, toast, formData.businessDescription]);
+  }, [isPolling, toast, formData.businessName]);
 
   const handleSubmit = async () => {
     if (!validate()) return;
@@ -197,9 +197,10 @@ export const MultiStepBusinessPlanForm = () => {
     } catch (error: any) {
       console.error('Error:', error);
       setErrors({
-        submit: error.message || 'Failed to generate business plan. Please try again.'
+        submit: 'Something went wrong while generating your PDF. Please try again.'
       });
       setIsLoading(false);
+      setIsPolling(false);
     }
   };
 
