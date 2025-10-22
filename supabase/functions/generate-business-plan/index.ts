@@ -65,7 +65,7 @@ serve(async (req) => {
     // n8n will call back to update-pdf-status when done
     const webhookTask = async () => {
       try {
-        const n8nUrl = "https://hashirceo.app.n8n.cloud/webhook-test/2fcbe92b-1cd7-4ac9-987f-34dbaa1dc93f";
+        const n8nUrl = "https://hashirceo.app.n8n.cloud/webhook-test/generate-pdf";
 
         console.log("Calling n8n webhook for reportId:", reportId);
         console.log("Webhook payload:", { userId, reportId, formDataKeys: Object.keys(formData) });
@@ -73,7 +73,7 @@ serve(async (req) => {
         // Include callback URL for n8n to call when done
         const callbackUrl = `${supabaseUrl}/functions/v1/update-pdf-status`;
 
-        const response = await n8nUrl, {
+        const response = await fetch(n8nUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
