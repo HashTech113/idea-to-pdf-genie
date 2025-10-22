@@ -31,6 +31,8 @@ export const MultiStepBusinessPlanForm = () => {
   const [userPlan, setUserPlan] = useState<"free" | "pro">("free");
   const [numPages, setNumPages] = useState<number>(0);
   const [isPolling, setIsPolling] = useState(false);
+  const [submittedBusinessIdea, setSubmittedBusinessIdea] = useState("");
+  const [submittedLocation, setSubmittedLocation] = useState("");
   const fallbackPollingRef = useRef<NodeJS.Timeout | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const realtimeChannelRef = useRef<any>(null);
@@ -116,7 +118,11 @@ export const MultiStepBusinessPlanForm = () => {
           },
           (payload: any) => {
             console.log("Realtime INSERT received:", payload.new);
-            if (payload.new?.pdf_url) {
+            // Check if this matches the submitted business idea and location
+            const matchesBusiness = payload.new?.business_idea === submittedBusinessIdea;
+            const matchesLocation = payload.new?.location === submittedLocation;
+            
+            if (payload.new?.pdf_url && matchesBusiness && matchesLocation) {
               console.log("PDF URL found via realtime:", payload.new.pdf_url);
               setPdfUrl(payload.new.pdf_url);
               setShowPreview(true);
@@ -146,15 +152,18 @@ export const MultiStepBusinessPlanForm = () => {
         console.log("Starting fallback polling for user:", user.id);
         const pollInterval = setInterval(async () => {
           try {
-            console.log("Polling database...");
-            // Using the correct column names: business_idea, location
+            console.log("Polling database for business_idea:", submittedBusinessIdea, "location:", submittedLocation);
+            // Query with filters for business_idea and location
             const { data, error } = await supabase
               .from("user_business")
-              .select("pdf_url, business_idea, location")
+              .select("pdf_url, business_idea, location, created_at")
               .eq("user_id", user.id)
+              .eq("business_idea", submittedBusinessIdea)
+              .eq("location", submittedLocation)
+              .not("pdf_url", "is", null)
               .order("created_at", { ascending: false })
               .limit(1)
-              .single();
+              .maybeSingle();
 
             if (error) {
               if (error.code !== "PGRST116") {
@@ -222,7 +231,7 @@ export const MultiStepBusinessPlanForm = () => {
     return () => {
       cleanup?.then((cleanupFn) => cleanupFn?.());
     };
-  }, [isPolling, toast]);
+  }, [isPolling, toast, submittedBusinessIdea, submittedLocation]);
 
   const handleSubmit = async () => {
     if (!validate()) return;
@@ -241,6 +250,10 @@ export const MultiStepBusinessPlanForm = () => {
     }
 
     console.log("Current user ID:", user.id);
+
+    // Store submitted values for polling comparison
+    setSubmittedBusinessIdea(formData.businessDescription);
+    setSubmittedLocation(formData.customerLocation);
 
     const dataToSend = {
       userId: user.id,
@@ -266,15 +279,12 @@ export const MultiStepBusinessPlanForm = () => {
       const data = await response.json();
       console.log("Webhook response:", data);
 
-      if (data.status === "processing") {
-        setIsPolling(true);
-        toast({
-          title: "PDF Generation Started",
-          description: "We're generating your business plan. This may take 2-5 minutes.",
-        });
-      } else {
-        throw new Error("Unexpected response from webhook");
-      }
+      // Start polling regardless of webhook response
+      setIsPolling(true);
+      toast({
+        title: "PDF Generation Started",
+        description: "We're generating your business plan. This may take 2-5 minutes.",
+      });
     } catch (error: any) {
       console.error("Error:", error);
       setErrors({
