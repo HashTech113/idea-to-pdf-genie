@@ -121,7 +121,7 @@ export const MultiStepBusinessPlanForm = () => {
             // Check if this matches the submitted business idea and location
             const matchesBusiness = payload.new?.business_idea === submittedBusinessIdea;
             const matchesLocation = payload.new?.location === submittedLocation;
-            
+
             if (payload.new?.pdf_url && matchesBusiness && matchesLocation) {
               console.log("PDF URL found via realtime:", payload.new.pdf_url);
               setPdfUrl(payload.new.pdf_url);
@@ -265,7 +265,7 @@ export const MultiStepBusinessPlanForm = () => {
 
     console.log("Sending data to webhook:", dataToSend);
 
-    const webhookUrl = "https://hashirceo.app.n8n.cloud/webhook-test/generate-pdf";
+    const webhookUrl = "https://hashirceo.app.n8n.cloud/webhook/generate-pdf";
 
     try {
       const response = await fetch(webhookUrl, {
