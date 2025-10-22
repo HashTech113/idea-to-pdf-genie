@@ -8,11 +8,6 @@ import { LogOut, Loader2, FileText, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { Document, Page, pdfjs } from 'react-pdf';
-import 'react-pdf/dist/Page/AnnotationLayer.css';
-import 'react-pdf/dist/Page/TextLayer.css';
-
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 export const MultiStepBusinessPlanForm = () => {
   const [formData, setFormData] = useState({
@@ -55,7 +50,6 @@ export const MultiStepBusinessPlanForm = () => {
   const [pdfUrl, setPdfUrl] = useState('');
   const [showPreview, setShowPreview] = useState(false);
   const [userPlan, setUserPlan] = useState<'free' | 'pro'>('free');
-  const [numPages, setNumPages] = useState<number>(0);
   const [isPolling, setIsPolling] = useState(false);
   const fallbackPollingRef = useRef<NodeJS.Timeout | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -286,13 +280,7 @@ export const MultiStepBusinessPlanForm = () => {
     }
   };
 
-  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
-    setNumPages(numPages);
-  };
-
   if (showPreview && pdfUrl) {
-    const pagesToShow = userPlan === 'free' ? 2 : numPages;
-    
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
         <div className="max-w-7xl mx-auto">
@@ -304,7 +292,7 @@ export const MultiStepBusinessPlanForm = () => {
                   Your Business Plan {userPlan === 'free' && '(Preview)'}
                 </h2>
                 {userPlan === 'free' && (
-                  <p className="text-sm text-gray-600 mt-1">Showing first 2 pages. Upgrade to Pro to view and download the full PDF.</p>
+                  <p className="text-sm text-gray-600 mt-1">Upgrade to Pro to download the full PDF.</p>
                 )}
               </div>
               <div className="flex gap-3">
@@ -318,34 +306,17 @@ export const MultiStepBusinessPlanForm = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden p-6">
-            <div className="flex flex-col items-center">
-              <Document
-                file={pdfUrl}
-                onLoadSuccess={onDocumentLoadSuccess}
-                className="max-w-full"
-              >
-                {Array.from(new Array(pagesToShow), (el, index) => (
-                  <Page
-                    key={`page_${index + 1}`}
-                    pageNumber={index + 1}
-                    className="mb-4 shadow-lg"
-                    width={Math.min(window.innerWidth - 100, 800)}
-                  />
-                ))}
-              </Document>
-              
-              {userPlan === 'free' && numPages > 2 && (
-                <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200 text-center">
-                  <p className="text-sm text-gray-700 mb-2">
-                    {numPages - 2} more pages available in the full PDF
-                  </p>
-                </div>
-              )}
-
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+            <iframe 
+              src={pdfUrl}
+              className="w-full h-[800px] border-0"
+              title="Business Plan PDF"
+            />
+            
+            <div className="p-6">
               <Button
                 onClick={handleDownload}
-                className="mt-6 w-full max-w-md h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 gap-2"
+                className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 gap-2"
                 disabled={userPlan === 'free'}
               >
                 <Download className="h-5 w-5" />
