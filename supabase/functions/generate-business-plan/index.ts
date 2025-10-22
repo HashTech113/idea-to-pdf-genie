@@ -51,16 +51,6 @@ serve(async (req) => {
 
     console.log("Starting PDF generation for user:", userId, "reportId:", reportId);
 
-    // Update job status to 'processing'
-    const { error: updateError } = await supabase
-      .from("jobs")
-      .update({ status: "processing" })
-      .eq("report_id", reportId);
-
-    if (updateError) {
-      console.error("Error updating job status:", updateError);
-    }
-
     // Trigger n8n webhook as a fire-and-forget background task
     // n8n will call back to update-pdf-status when done
     const webhookTask = async () => {
@@ -92,37 +82,13 @@ serve(async (req) => {
         if (!response.ok) {
           const errorText = await response.text();
           console.error("n8n webhook trigger failed:", response.status, errorText);
-
-          // Update job status to failed only if we couldn't trigger the webhook
-          await supabase
-            .from("jobs")
-            .update({
-              status: "failed",
-              error_message: `Failed to trigger n8n workflow: ${response.status}`,
-            })
-            .eq("report_id", reportId);
         } else {
           console.log("n8n webhook triggered successfully for reportId:", reportId);
           console.log("Waiting for n8n to call back with PDF URL...");
-          // Job stays in 'processing' status until n8n calls back
         }
       } catch (error) {
         console.error("Error triggering n8n webhook:", error);
-        console.error("Error details:", error.message, error.stack);
-
-        // Only mark as failed if it's NOT a timeout error
-        // Timeouts are expected when using the callback pattern
-        if (!(error instanceof DOMException && error.name === "TimeoutError")) {
-          await supabase
-            .from("jobs")
-            .update({
-              status: "failed",
-              error_message: `Failed to trigger n8n: ${error.message || "Unknown error"}`,
-            })
-            .eq("report_id", reportId);
-        } else {
-          console.log("Timeout while triggering webhook (expected) - job remains in processing state");
-        }
+        console.error("Error details:", error.message || "Unknown error");
       }
     };
 
@@ -133,9 +99,8 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        success: true,
-        reportId,
-        message: "Business plan generated and stored successfully",
+        status: "processing",
+        message: "PDF generation started.",
       }),
       {
         status: 200,
