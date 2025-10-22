@@ -220,15 +220,23 @@ export const MultiStepBusinessPlanForm = () => {
 
     console.log('Sending data:', dataToSend);
 
-    const webhookUrl = 'https://hashirceo.app.n8n.cloud/webhook-test/generate-pdf';
-
     try {
-      const response = await fetch(webhookUrl, {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await fetch('https://tvznnerrgaprchburewu.supabase.co/functions/v1/generate-business-plan', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
         },
-        body: JSON.stringify(dataToSend)
+        body: JSON.stringify({
+          userId: user.id,
+          reportId: crypto.randomUUID(),
+          businessName: formData.businessName,
+          businessDescription: formData.businessDescription,
+          numberOfEmployees: formData.numberOfEmployees,
+          customerLocation: formData.customerLocation
+        })
       });
 
       const data = await response.json();
