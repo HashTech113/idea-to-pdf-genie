@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import AdminProtectedRoute from "@/components/AdminProtectedRoute";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
@@ -13,7 +12,6 @@ import OTPSignUp from "./pages/OTPSignUp";
 import BusinessPlan from "./pages/BusinessPlan";
 import Pricing from "./pages/Pricing";
 import Generating from "./pages/Generating";
-import AdminDashboard from "./pages/AdminDashboard";
 
 import NotFound from "./pages/NotFound";
 
@@ -37,11 +35,6 @@ const App = () => (
             } />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/generating/:reportId" element={<Generating />} />
-            <Route path="/admin" element={
-              <AdminProtectedRoute>
-                <AdminDashboard />
-              </AdminProtectedRoute>
-            } />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
