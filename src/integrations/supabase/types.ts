@@ -44,6 +44,9 @@ export type Database = {
           last_login: string | null
           name: string | null
           plan: string | null
+          plan_expiry: string | null
+          plan_status: string | null
+          role: string | null
           updated_at: string
           user_id: string
         }
@@ -52,6 +55,9 @@ export type Database = {
           last_login?: string | null
           name?: string | null
           plan?: string | null
+          plan_expiry?: string | null
+          plan_status?: string | null
+          role?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -60,6 +66,9 @@ export type Database = {
           last_login?: string | null
           name?: string | null
           plan?: string | null
+          plan_expiry?: string | null
+          plan_status?: string | null
+          role?: string | null
           updated_at?: string
           user_id?: string
         }
