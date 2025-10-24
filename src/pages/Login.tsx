@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { Eye, EyeOff } from 'lucide-react';
 import { z } from 'zod';
+import { supabase } from '@/integrations/supabase/client';
 
 const loginSchema = z.object({
   email: z.string().trim().email({ message: "Invalid email address" }),
@@ -96,6 +97,21 @@ const Login = () => {
         title: "Welcome back!",
         description: "You have successfully logged in.",
       });
+      
+      // Check if user is admin and redirect accordingly
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (profile?.role === 'admin') {
+          navigate('/admin');
+          return;
+        }
+      }
       
       navigate(redirectTo);
     } catch (error: any) {
