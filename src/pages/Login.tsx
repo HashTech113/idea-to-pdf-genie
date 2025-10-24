@@ -98,16 +98,19 @@ const Login = () => {
         description: "You have successfully logged in.",
       });
       
+      // Wait a moment for session to be fully established
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       // Check if user is admin and redirect accordingly
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
+        const { data: roles } = await supabase
+          .from('user_roles')
           .select('role')
-          .eq('user_id', user.id)
-          .single();
+          .eq('user_id', user.id);
         
-        if (profile?.role === 'admin') {
+        const isAdmin = roles?.some(r => r.role === 'admin');
+        if (isAdmin) {
           navigate('/admin');
           return;
         }

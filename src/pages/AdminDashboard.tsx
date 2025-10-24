@@ -34,15 +34,15 @@ const AdminDashboard = () => {
       }
 
       try {
-        const { data: profile, error } = await supabase
-          .from('profiles')
+        const { data: roles, error } = await supabase
+          .from('user_roles')
           .select('role')
-          .eq('user_id', user.id)
-          .single();
+          .eq('user_id', user.id);
 
         if (error) throw error;
 
-        if (profile?.role !== 'admin') {
+        const hasAdminRole = roles?.some(r => r.role === 'admin');
+        if (!hasAdminRole) {
           toast({
             title: "Access Denied",
             description: "You do not have permission to access this page.",
@@ -72,15 +72,22 @@ const AdminDashboard = () => {
 
   const fetchStats = async () => {
     try {
-      const { data: profiles, error } = await supabase
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('plan_status, role');
+        .select('plan_status');
 
-      if (error) throw error;
+      if (profilesError) throw profilesError;
+
+      const { data: adminRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'admin');
+
+      if (rolesError) throw rolesError;
 
       const free = profiles?.filter(p => p.plan_status === 'free').length || 0;
       const subscribed = profiles?.filter(p => p.plan_status === 'subscribed').length || 0;
-      const admin = profiles?.filter(p => p.role === 'admin').length || 0;
+      const admin = adminRoles?.length || 0;
 
       setStats({ free, subscribed, admin });
     } catch (error) {
