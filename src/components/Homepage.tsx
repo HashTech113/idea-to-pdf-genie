@@ -277,7 +277,7 @@ const Homepage = () => {
                   Pro
                 </h3>
                 <div className="mb-4">
-                  <span className="text-5xl font-bold text-gray-900">$10</span>
+                  <span className="text-5xl font-bold text-gray-900">Rs 10000</span>
                   <span className="text-gray-600">/month</span>
                 </div>
                 <p className="text-base text-gray-600 mb-6">
