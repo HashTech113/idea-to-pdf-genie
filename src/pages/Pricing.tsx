@@ -4,17 +4,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 const Pricing = () => {
-  const features = [
-    "Unlimited seats",
-    "Results in 5 minutes",
-    "AI-powered insights with verified B2B audiences"
-  ];
+  const features = ["Unlimited seats", "Results in 5 minutes", "AI-powered insights with verified B2B audiences"];
 
   const proFeatures = [
     "Unlimited access to the AI-powered research agent",
     "5-minute insight delivery (priority)",
     "Advanced audience filters",
-    "Priority email support"
+    "Priority email support",
   ];
 
   return (
@@ -29,12 +25,8 @@ const Pricing = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-16 max-w-4xl">
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-            Subscription pricing
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            World's 1st market research agent
-          </p>
+          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">Subscription pricing</h1>
+          <p className="text-lg text-muted-foreground">World's 1st market research agent</p>
         </div>
 
         {/* Features List */}
@@ -55,17 +47,13 @@ const Pricing = () => {
         <div className="max-w-md mx-auto mb-12">
           <Card className="border-2 border-primary/20 shadow-lg relative">
             <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-              <Badge className="bg-primary text-primary-foreground px-4 py-1">
-                Most Popular
-              </Badge>
+              <Badge className="bg-primary text-primary-foreground px-4 py-1">Most Popular</Badge>
             </div>
-            
+
             <CardHeader className="text-center pt-8">
-              <CardTitle className="text-3xl font-bold text-foreground mb-2">
-                Pro
-              </CardTitle>
+              <CardTitle className="text-3xl font-bold text-foreground mb-2">Pro</CardTitle>
               <div className="mb-4">
-                <span className="text-5xl font-bold text-foreground">$10</span>
+                <span className="text-5xl font-bold text-foreground">₹10000</span>
                 <span className="text-muted-foreground">/month</span>
               </div>
               <CardDescription className="text-base">
@@ -74,22 +62,18 @@ const Pricing = () => {
             </CardHeader>
 
             <CardContent className="text-center">
-              <p className="text-sm text-muted-foreground mb-6">
-                30-day money-back guarantee — cancel anytime.
-              </p>
-              
-              <Button 
+              <p className="text-sm text-muted-foreground mb-6">30-day money-back guarantee — cancel anytime.</p>
+
+              <Button
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 text-lg font-semibold"
-                onClick={() => window.location.href = 'https://rzp.io/rzp/TqlDyDU'}
+                onClick={() => (window.location.href = "https://rzp.io/rzp/TqlDyDU")}
               >
                 Subscribe now →
               </Button>
             </CardContent>
 
             <CardFooter className="flex-col items-start border-t border-border pt-6">
-              <h3 className="font-semibold text-foreground mb-4">
-                What you get with Pro:
-              </h3>
+              <h3 className="font-semibold text-foreground mb-4">What you get with Pro:</h3>
               <ul className="space-y-3 w-full">
                 {proFeatures.map((feature, index) => (
                   <li key={index} className="flex items-start gap-3">
