@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { Eye, EyeOff } from 'lucide-react';
 import { z } from 'zod';
 
@@ -96,6 +97,26 @@ const Login = () => {
         title: "Welcome back!",
         description: "You have successfully logged in.",
       });
+
+      // Wait briefly for session to be established
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Check if user is admin
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      if (currentUser) {
+        const { data: adminRole } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', currentUser.id)
+          .eq('role', 'admin')
+          .maybeSingle();
+
+        if (adminRole) {
+          navigate('/admin');
+          return;
+        }
+      }
       
       navigate(redirectTo);
     } catch (error: any) {

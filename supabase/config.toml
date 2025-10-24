@@ -57,3 +57,6 @@ verify_jwt = false
 
 [functions.update-pdf-status]
 verify_jwt = false
+
+[functions.get-users-emails]
+verify_jwt = true
