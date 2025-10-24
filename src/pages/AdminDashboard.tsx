@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,7 +22,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, RefreshCw } from 'lucide-react';
+import { Loader2, RefreshCw, LogOut, TrendingUp } from 'lucide-react';
 import { format, isFuture, isPast } from 'date-fns';
 
 interface UserProfile {
@@ -40,6 +42,8 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const { toast } = useToast();
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
 
   const fetchUsers = async () => {
     try {
@@ -159,6 +163,15 @@ const AdminDashboard = () => {
     return 'active';
   };
 
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/');
+  };
+
+  const handleMarketResearch = () => {
+    navigate('/multistep-businessplan');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -171,10 +184,20 @@ const AdminDashboard = () => {
     <div className="container mx-auto p-6 max-w-7xl">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <Button onClick={fetchUsers} variant="outline" size="sm">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleMarketResearch} variant="outline" size="sm">
+            <TrendingUp className="h-4 w-4 mr-2" />
+            Market Research Agent
+          </Button>
+          <Button onClick={fetchUsers} variant="outline" size="sm">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+          <Button onClick={handleLogout} variant="destructive" size="sm">
+            <LogOut className="h-4 w-4 mr-2" />
+            Logout
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="all" className="w-full">
