@@ -169,7 +169,7 @@ const AdminDashboard = () => {
   };
 
   const handleMarketResearch = () => {
-    navigate('/multistep-businessplan');
+    navigate('/business-plan');
   };
 
   if (loading) {
