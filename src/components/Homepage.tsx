@@ -431,13 +431,13 @@ const Homepage = () => {
       <footer className="py-12 px-4 bg-white border-t border-gray-200">
         <div className="max-w-6xl mx-auto text-center">
           <p className="text-gray-600 mb-4">
-            Contact: help@15minuteplan.ai
+            Contact: contact@owlytics.co
           </p>
           <div className="flex justify-center space-x-6 mb-4">
             <a href="#" className="text-blue-600 hover:text-blue-800">Privacy & Refund Policies Apply</a>
           </div>
           <p className="text-gray-500 text-sm">
-            © 2024 15 Minute Plan. All rights reserved.
+            © 2025 Market Research Agent. All rights reserved.
           </p>
         </div>
       </footer>
