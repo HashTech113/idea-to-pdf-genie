@@ -121,6 +121,7 @@ const Pricing = () => {
 
               <Button
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 text-lg font-semibold"
+                onClick={() => (window.location.href = "https://razorpay.me/@kurumthazaaswin")}
                 onClick={handlePayment}
               >
                 Subscribe now →
