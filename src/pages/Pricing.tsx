@@ -65,6 +65,8 @@ const Pricing = () => {
     } catch (error) {
       console.error("Payment error:", error);
       alert("Something went wrong. Please try again.");
+      // Optional fallback redirect
+      // window.location.href = "https://razorpay.me/@kurumthazaaswin";
     }
   };
 
@@ -117,38 +119,5 @@ const Pricing = () => {
             </CardHeader>
 
             <CardContent className="text-center">
-              <p className="text-sm text-muted-foreground mb-6">30-day money-back guarantee — cancel anytime.</p>
-
-              <Button
-                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 text-lg font-semibold"
-                onClick={() => (window.location.href = "https://razorpay.me/@kurumthazaaswin")}
-                onClick={handlePayment}
-              >
-                Subscribe now →
-              </Button>
-            </CardContent>
-
-            <CardFooter className="flex-col items-start border-t border-border pt-6">
-              <h3 className="font-semibold text-foreground mb-4">What you get with Pro:</h3>
-              <ul className="space-y-3 w-full">
-                {proFeatures.map((feature, index) => (
-                  <li key={index} className="flex items-start gap-3">
-                    <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                    <span className="text-sm text-foreground">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardFooter>
-          </Card>
-        </div>
-
-        {/* Trust Elements */}
-        <div className="text-center text-sm text-muted-foreground max-w-md mx-auto">
-          <p>Secure payment processing. Cancel anytime with one click.</p>
-        </div>
-      </main>
-    </div>
-  );
-};
-
-export default Pricing;
+              <p className="text-sm text-muted-foreground mb-6">
+                30-day money-back guarant
