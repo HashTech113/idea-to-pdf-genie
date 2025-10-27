@@ -73,7 +73,7 @@ const Pricing = () => {
               <p className="text-sm text-muted-foreground mb-6">30-day money-back guarantee — cancel anytime.</p>{" "}
               <Button
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 text-lg font-semibold"
-                onClick={() => (window.location.href = "https://rzp.io/rzp/TqlDyDU")}
+                onClick={() => (window.location.href = "https://rzp.io/rzp/9S0U61Dk")}
               >
                 {" "}
                 Subscribe now →{" "}
