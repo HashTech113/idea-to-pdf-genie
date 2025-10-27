@@ -120,4 +120,30 @@ const Pricing = () => {
 
             <CardContent className="text-center">
               <p className="text-sm text-muted-foreground mb-6">
-                30-day money-back guarant
+                30-day money-back guarantee
+              </p>
+              <ul className="space-y-3 text-left mb-6">
+                {proFeatures.map((feature, index) => (
+                  <li key={index} className="flex items-center gap-3">
+                    <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Check className="w-3 h-3 text-primary" />
+                    </div>
+                    <span className="text-foreground">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+
+            <CardFooter className="flex flex-col gap-4">
+              <Button onClick={handlePayment} className="w-full" size="lg">
+                Subscribe Now
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default Pricing;
