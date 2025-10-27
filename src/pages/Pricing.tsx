@@ -9,7 +9,7 @@ const Pricing = () => {
 
   const handleSubscribe = () => {
     setIsRedirecting(true);
-    window.location.href = "https://pages.razorpay.com/pl_RYPiGXXwTiV5Hu/view";
+    window.location.href = "https://rzp.io/rzp/9S0U61Dk";
   };
 
   const coreFeatures = [
