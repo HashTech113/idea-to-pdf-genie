@@ -65,8 +65,6 @@ const Pricing = () => {
     } catch (error) {
       console.error("Payment error:", error);
       alert("Something went wrong. Please try again.");
-      // Optional fallback redirect
-      window.location.href = "https://razorpay.me/@kurumthazaaswin";
     }
   };
 
@@ -119,25 +117,34 @@ const Pricing = () => {
             </CardHeader>
 
             <CardContent className="text-center">
-              <p className="text-sm text-muted-foreground mb-6">30-day money-back guarantee</p>
-              <ul className="space-y-3 text-left mb-6">
+              <p className="text-sm text-muted-foreground mb-6">30-day money-back guarantee — cancel anytime.</p>
+
+              <Button
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 text-lg font-semibold"
+                onClick={() => (window.location.href = "https://razorpay.me/@kurumthazaaswin")}
+                onClick={handlePayment}
+              >
+                Subscribe now →
+              </Button>
+            </CardContent>
+
+            <CardFooter className="flex-col items-start border-t border-border pt-6">
+              <h3 className="font-semibold text-foreground mb-4">What you get with Pro:</h3>
+              <ul className="space-y-3 w-full">
                 {proFeatures.map((feature, index) => (
-                  <li key={index} className="flex items-center gap-3">
-                    <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Check className="w-3 h-3 text-primary" />
-                    </div>
-                    <span className="text-foreground">{feature}</span>
+                  <li key={index} className="flex items-start gap-3">
+                    <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                    <span className="text-sm text-foreground">{feature}</span>
                   </li>
                 ))}
               </ul>
-            </CardContent>
-
-            <CardFooter className="flex flex-col gap-4">
-              <Button onClick={handlePayment} className="w-full" size="lg">
-                Subscribe Now
-              </Button>
             </CardFooter>
           </Card>
+        </div>
+
+        {/* Trust Elements */}
+        <div className="text-center text-sm text-muted-foreground max-w-md mx-auto">
+          <p>Secure payment processing. Cancel anytime with one click.</p>
         </div>
       </main>
     </div>
@@ -145,3 +152,8 @@ const Pricing = () => {
 };
 
 export default Pricing;
+
+No supabase/functions directory changed
+src/pages/Pricing.tsx(125,17): error TS17001: JSX elements cannot have multiple attributes with the same name.
+
+how to fix this error
