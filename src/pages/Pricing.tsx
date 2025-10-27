@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +14,60 @@ const Pricing = () => {
     "Priority email support",
   ];
 
+  // Load Razorpay script once
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    document.body.appendChild(script);
+  }, []);
+
+  const handlePayment = async () => {
+    try {
+      // Create order via Supabase Edge Function (Live)
+      const res = await fetch("https://tvznnerrgaprchburewu.supabase.co/functions/v1/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: 10000 * 100 }), // INR in paise
+      });
+
+      const order = await res.json();
+
+      const options = {
+        key: "rzp_live_RYMUrImfeEQF84", // 🔑 Replace with your Razorpay Live Key ID
+        amount: order.amount,
+        currency: "INR",
+        name: "Market Research Agent",
+        description: "Pro Subscription (₹10000/month)",
+        order_id: order.id,
+        handler: async function (response: any) {
+          // Verify payment
+          await fetch("https://tvznnerrgaprchburewu.supabase.co/functions/v1/verify-payment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(response),
+          });
+          // Redirect to success page
+          window.location.href = "/payment-success";
+        },
+        prefill: {
+          name: "Your Customer",
+          email: "customer@email.com",
+          contact: "9999999999",
+        },
+        theme: {
+          color: "#6366f1",
+        },
+      };
+
+      const razor = new (window as any).Razorpay(options);
+      razor.open();
+    } catch (error) {
+      console.error("Payment error:", error);
+      alert("Something went wrong. Please try again.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -25,7 +80,7 @@ const Pricing = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-16 max-w-4xl">
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">Subscription pricing</h1>
+          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">Subscription Pricing</h1>
           <p className="text-lg text-muted-foreground">World's 1st market research agent</p>
         </div>
 
@@ -66,7 +121,7 @@ const Pricing = () => {
 
               <Button
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 text-lg font-semibold"
-                onClick={() => (window.location.href = "https://rzp.io/rzp/TqlDyDU")}
+                onClick={handlePayment}
               >
                 Subscribe now →
               </Button>
