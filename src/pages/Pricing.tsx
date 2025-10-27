@@ -22,50 +22,8 @@ const Pricing = () => {
     document.body.appendChild(script);
   }, []);
 
-  const handlePayment = async () => {
-    try {
-      // Create order via Supabase Edge Function (Live)
-      const res = await fetch("https://tvznnerrgaprchburewu.supabase.co/functions/v1/create-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: 10000 * 100 }), // INR in paise
-      });
-
-      const order = await res.json();
-
-      const options = {
-        key: "rzp_live_RYMUrImfeEQF84", // 🔑 Replace with your Razorpay Live Key ID
-        amount: order.amount,
-        currency: "INR",
-        name: "Market Research Agent",
-        description: "Pro Subscription (₹10000/month)",
-        order_id: order.id,
-        handler: async function (response: any) {
-          // Verify payment
-          await fetch("https://tvznnerrgaprchburewu.supabase.co/functions/v1/verify-payment", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(response),
-          });
-          // Redirect to success page
-          window.location.href = "/payment-success";
-        },
-        prefill: {
-          name: "Your Customer",
-          email: "customer@email.com",
-          contact: "9999999999",
-        },
-        theme: {
-          color: "#6366f1",
-        },
-      };
-
-      const razor = new (window as any).Razorpay(options);
-      razor.open();
-    } catch (error) {
-      console.error("Payment error:", error);
-      alert("Something went wrong. Please try again.");
-    }
+  const handlePayment = () => {
+    window.location.href = "https://rzp.io/rzp/9S0U61Dk";
   };
 
   return (
