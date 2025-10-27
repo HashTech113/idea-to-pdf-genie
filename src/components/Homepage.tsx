@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowRight, CheckCircle, Globe, Users, TrendingUp, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { PricingSection } from "@/components/PricingSection";
 
 const Homepage = () => {
   const navigate = useNavigate();
@@ -228,108 +229,8 @@ const Homepage = () => {
       </section>
 
       {/* Pricing Section */}
-      <section className="py-16 px-4 bg-gray-50">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Get Market Insights in 5 Minutes
-            </h2>
-            <p className="text-lg text-gray-600">
-              Unlock unlimited access to AI-powered market research
-            </p>
-          </div>
-
-          {/* Core Features */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto mb-12">
-            <div className="flex items-center gap-3 p-4 rounded-lg bg-white border border-gray-200">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <CheckCircle className="w-5 h-5 text-blue-600" />
-              </div>
-              <span className="text-sm font-medium text-gray-900">5-minute delivery</span>
-            </div>
-            <div className="flex items-center gap-3 p-4 rounded-lg bg-white border border-gray-200">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <Users className="w-5 h-5 text-blue-600" />
-              </div>
-              <span className="text-sm font-medium text-gray-900">Unlimited seats</span>
-            </div>
-            <div className="flex items-center gap-3 p-4 rounded-lg bg-white border border-gray-200">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-blue-600" />
-              </div>
-              <span className="text-sm font-medium text-gray-900">AI-powered insights</span>
-            </div>
-          </div>
-
-          {/* Pricing Card */}
-          <div className="max-w-md mx-auto">
-            <Card className="border-2 border-blue-200 shadow-lg relative bg-white">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <div className="bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-semibold flex items-center gap-1">
-                  <Star className="w-3 h-3 fill-current" />
-                  Most Popular
-                </div>
-              </div>
-              
-              <div className="text-center pt-8 px-6">
-                <h3 className="text-3xl font-bold text-gray-900 mb-2">
-                  Pro Plan
-                </h3>
-                <div className="mb-4">
-                  <span className="text-5xl font-bold text-gray-900">₹10,000</span>
-                  <span className="text-gray-600">/month</span>
-                </div>
-                <p className="text-base text-gray-600 mb-6">
-                  Complete access to AI-powered market research with unlimited tokens.
-                </p>
-                
-                <p className="text-sm text-gray-500 mb-6">
-                  30-day money-back guarantee • Cancel anytime
-                </p>
-                
-                <Button 
-                  className="w-full bg-black text-white hover:bg-gray-800 h-12 text-lg font-semibold mb-6"
-                  onClick={() => window.location.href = 'https://rzp.io/rzp/9S0U61Dk'}
-                >
-                  Subscribe now <ArrowRight className="ml-2 w-4 h-4" />
-                </Button>
-              </div>
-
-              <div className="flex-col items-start border-t border-gray-200 pt-6 px-6 pb-6">
-                <h3 className="font-semibold text-gray-900 mb-4">
-                  Everything included:
-                </h3>
-                <ul className="space-y-3 w-full">
-                  <li className="flex items-start gap-3">
-                    <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <span className="text-sm text-gray-900">Unlimited access to AI research agent</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <span className="text-sm text-gray-900">Priority 5-minute insight delivery</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <span className="text-sm text-gray-900">Advanced audience filters</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <span className="text-sm text-gray-900">Priority email support</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <span className="text-sm text-gray-900">Export in multiple formats</span>
-                  </li>
-                </ul>
-              </div>
-            </Card>
-          </div>
-
-          {/* Trust Elements */}
-          <div className="text-center text-sm text-gray-500 max-w-md mx-auto mt-8">
-            <p>Secure payment processing • No hidden fees</p>
-          </div>
-        </div>
+      <section className="bg-gradient-to-b from-background via-background to-accent/5">
+        <PricingSection />
       </section>
 
       {/* Example AI-Generated Report Section */}
