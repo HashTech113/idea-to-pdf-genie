@@ -174,7 +174,7 @@ const Homepage = () => {
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">Ultra-Fast Reports</h3>
                 <p className="text-gray-600">
-                  From start to finish in under 15 minutes.
+                  From start to finish in under 10 minutes.
                 </p>
               </div>
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
