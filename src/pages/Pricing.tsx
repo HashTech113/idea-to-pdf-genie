@@ -66,7 +66,7 @@ const Pricing = () => {
       console.error("Payment error:", error);
       alert("Something went wrong. Please try again.");
       // Optional fallback redirect
-      // window.location.href = "https://razorpay.me/@kurumthazaaswin";
+      window.location.href = "https://razorpay.me/@kurumthazaaswin";
     }
   };
 
@@ -119,9 +119,7 @@ const Pricing = () => {
             </CardHeader>
 
             <CardContent className="text-center">
-              <p className="text-sm text-muted-foreground mb-6">
-                30-day money-back guarantee
-              </p>
+              <p className="text-sm text-muted-foreground mb-6">30-day money-back guarantee</p>
               <ul className="space-y-3 text-left mb-6">
                 {proFeatures.map((feature, index) => (
                   <li key={index} className="flex items-center gap-3">
