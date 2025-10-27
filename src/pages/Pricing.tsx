@@ -116,7 +116,7 @@ const Pricing = () => {
               <CardTitle className="text-3xl font-bold text-foreground mb-2">Pro Plan</CardTitle>
               <div className="mb-4">
                 <div className="flex items-baseline justify-center gap-2">
-                  <span className="text-5xl md:text-6xl font-bold text-foreground">₹10,000</span>
+                  <span className="text-5xl md:text-6xl font-bold text-foreground">INR 100 </span>
                   <span className="text-muted-foreground text-lg">/month</span>
                 </div>
               </div>
