@@ -121,7 +121,6 @@ const Pricing = () => {
 
               <Button
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 text-lg font-semibold"
-                onClick={() => (window.location.href = "https://razorpay.me/@kurumthazaaswin")}
                 onClick={handlePayment}
               >
                 Subscribe now →
@@ -152,8 +151,3 @@ const Pricing = () => {
 };
 
 export default Pricing;
-
-No supabase/functions directory changed
-src/pages/Pricing.tsx(125,17): error TS17001: JSX elements cannot have multiple attributes with the same name.
-
-how to fix this error
