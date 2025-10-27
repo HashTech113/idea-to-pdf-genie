@@ -8,8 +8,26 @@ const Pricing = () => {
   const [isRedirecting, setIsRedirecting] = useState(false);
 
   const handleSubscribe = () => {
+    const url = "https://rzp.io/rzp/9S0U61Dk";
     setIsRedirecting(true);
-    window.location.href = "https://rzp.io/rzp/9S0U61Dk";
+
+    try {
+      // Try opening in a new tab (works better in some in-app browsers)
+      const win = window.open(url, "_blank", "noopener,noreferrer");
+      if (!win) {
+        // If blocked, replace current page so the old one isn't kept in history
+        window.location.replace(url);
+      }
+    } catch {
+      window.location.replace(url);
+    }
+
+    // Last-resort fallback in case the browser blocks both
+    setTimeout(() => {
+      if (document.visibilityState === "visible") {
+        window.location.href = `${url}?t=${Date.now()}`;
+      }
+    }, 800);
   };
 
   const coreFeatures = [
@@ -110,6 +128,7 @@ const Pricing = () => {
             <CardContent className="px-6 pb-6">
               {/* CTA Button */}
               <Button
+                type="button"
                 className="w-full h-14 text-lg font-semibold bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all mb-4 group"
                 onClick={handleSubscribe}
                 disabled={isRedirecting}
