@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database, TablesInsert } from "@/integrations/supabase/types";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -14,6 +15,8 @@ import { format, isFuture, isPast } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+type AppRole = Database["public"]["Enums"]["app_role"];
 
 interface UserProfile {
   user_id: string;
@@ -31,12 +34,12 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [openAddUser, setOpenAddUser] = useState(false);
-  const [newUser, setNewUser] = useState({
-    email: "",
-    password: "",
-    role: "user",
-    plan_expiry: "",
-  });
+const [newUser, setNewUser] = useState<{ email: string; password: string; role: AppRole; plan_expiry: string }>({
+  email: "",
+  password: "",
+  role: "user",
+  plan_expiry: "",
+});
 
   const { toast } = useToast();
   const { signOut } = useAuth();
@@ -92,7 +95,8 @@ const AdminDashboard = () => {
     try {
       setUpdating(userId);
       await supabase.from("user_roles").delete().eq("user_id", userId);
-      const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: newRole });
+const row: TablesInsert<"user_roles"> = { user_id: userId, role: newRole as AppRole };
+      const { error } = await supabase.from("user_roles").insert(row);
       if (error) throw error;
       toast({ title: "Success", description: `User role updated to ${newRole}` });
       await fetchUsers();
@@ -126,10 +130,8 @@ const AdminDashboard = () => {
         plan_expiry: newUser.plan_expiry || null,
       });
 
-      await supabase.from("user_roles").insert({
-        user_id: userId,
-        role: newUser.role,
-      });
+const roleRow: TablesInsert<"user_roles"> = { user_id: userId, role: newUser.role };
+      await supabase.from("user_roles").insert(roleRow);
 
       toast({ title: "Success", description: "New user added successfully!" });
       setOpenAddUser(false);
@@ -330,7 +332,7 @@ const AdminDashboard = () => {
             </div>
             <div>
               <Label>Role</Label>
-              <Select value={newUser.role} onValueChange={(v) => setNewUser({ ...newUser, role: v })}>
+              <Select value={newUser.role} onValueChange={(v) => setNewUser({ ...newUser, role: v as AppRole })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
