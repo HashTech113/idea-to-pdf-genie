@@ -29,8 +29,20 @@ interface UserWithEmail extends UserProfile {
   email: string;
 }
 
+interface SubscriptionDetail {
+  id: string;
+  user_id: string;
+  email: string;
+  plan_name: string;
+  payment_id: string;
+  plan_start_date: string;
+  plan_expiry_date: string;
+  created_at: string;
+}
+
 const AdminDashboard = () => {
   const [users, setUsers] = useState<UserWithEmail[]>([]);
+  const [subscriptionDetails, setSubscriptionDetails] = useState<SubscriptionDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [openAddUser, setOpenAddUser] = useState(false);
@@ -76,6 +88,16 @@ const [newUser, setNewUser] = useState<{ email: string; password: string; role: 
         })) || [];
 
       setUsers(combinedUsers);
+
+      // Fetch subscription details
+      const { data: subscriptions, error: subscriptionsError } = await supabase
+        .from("details_of_subscribed_user")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (subscriptionsError) throw subscriptionsError;
+      setSubscriptionDetails(subscriptions || []);
+
     } catch (error: any) {
       toast({
         title: "Error",
@@ -209,6 +231,7 @@ const roleRow: TablesInsert<"user_roles"> = { user_id: userId, role: newUser.rol
         <TabsList className="mb-4">
           <TabsTrigger value="all">All Users</TabsTrigger>
           <TabsTrigger value="subscribed">Subscribed Users</TabsTrigger>
+          <TabsTrigger value="subscription-details">Subscription Details</TabsTrigger>
         </TabsList>
 
         {/* All Users Table */}
@@ -295,6 +318,51 @@ const roleRow: TablesInsert<"user_roles"> = { user_id: userId, role: newUser.rol
                       <TableCell>
                         <Badge variant={getExpiryStatus(user.plan_expiry) === "expired" ? "destructive" : "default"}>
                           {getExpiryStatus(user.plan_expiry) === "expired" ? "Expired" : "Active"}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Subscription Details */}
+        <TabsContent value="subscription-details">
+          <Card>
+            <CardHeader>
+              <CardTitle>Subscription Details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Plan Name</TableHead>
+                    <TableHead>Payment ID</TableHead>
+                    <TableHead>Start Date</TableHead>
+                    <TableHead>Expiry Date</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {subscriptionDetails.map((sub) => (
+                    <TableRow key={sub.id}>
+                      <TableCell>{sub.email}</TableCell>
+                      <TableCell>
+                        <Badge variant="default">{sub.plan_name}</Badge>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">{sub.payment_id}</TableCell>
+                      <TableCell>{format(new Date(sub.plan_start_date), "dd/MM/yyyy")}</TableCell>
+                      <TableCell>
+                        <span className={getExpiryStatus(sub.plan_expiry_date) === "expired" ? "text-destructive" : ""}>
+                          {format(new Date(sub.plan_expiry_date), "dd/MM/yyyy")}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getExpiryStatus(sub.plan_expiry_date) === "expired" ? "destructive" : "default"}>
+                          {getExpiryStatus(sub.plan_expiry_date) === "expired" ? "Expired" : "Active"}
                         </Badge>
                       </TableCell>
                     </TableRow>

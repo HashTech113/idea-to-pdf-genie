@@ -14,27 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
-      "details of subscribed users": {
+      details_of_subscribed_user: {
         Row: {
-          "business idea": string | null
           created_at: string
-          id: number
-          path: string | null
-          uid: string
+          email: string
+          id: string
+          payment_id: string
+          plan_expiry_date: string
+          plan_name: string
+          plan_start_date: string
+          user_id: string
         }
         Insert: {
-          "business idea"?: string | null
           created_at?: string
-          id?: number
-          path?: string | null
-          uid: string
+          email: string
+          id?: string
+          payment_id: string
+          plan_expiry_date: string
+          plan_name: string
+          plan_start_date: string
+          user_id: string
         }
         Update: {
-          "business idea"?: string | null
           created_at?: string
-          id?: number
-          path?: string | null
-          uid?: string
+          email?: string
+          id?: string
+          payment_id?: string
+          plan_expiry_date?: string
+          plan_name?: string
+          plan_start_date?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -136,7 +145,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "moderator" | "user"
+      app_role: "admin" | "moderator" | "user" | "subscribed_user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -264,7 +273,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "moderator", "user"],
+      app_role: ["admin", "moderator", "user", "subscribed_user"],
     },
   },
 } as const

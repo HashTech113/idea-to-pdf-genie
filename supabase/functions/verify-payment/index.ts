@@ -62,21 +62,54 @@ serve(async (req) => {
         const { data: { user } } = await supabase.auth.getUser(token);
 
         if (user) {
-          // Update user profile with plan details
-          const planExpiry = new Date();
-          planExpiry.setMonth(planExpiry.getMonth() + 1);
+          const planStartDate = new Date();
+          const planExpiryDate = new Date();
+          planExpiryDate.setMonth(planExpiryDate.getMonth() + 1);
 
+          // Insert subscription details
+          const { error: subscriptionError } = await supabase
+            .from('details_of_subscribed_user')
+            .insert({
+              user_id: user.id,
+              email: user.email || '',
+              plan_name: 'Pro',
+              payment_id: razorpay_payment_id,
+              plan_start_date: planStartDate.toISOString().split('T')[0],
+              plan_expiry_date: planExpiryDate.toISOString().split('T')[0]
+            });
+
+          if (subscriptionError) {
+            console.error('Error inserting subscription details:', subscriptionError);
+          } else {
+            console.log('Subscription details saved for user:', user.id);
+          }
+
+          // Update user role to subscribed_user
           await supabase
             .from('profiles')
             .update({
+              role: 'subscribed_user',
               plan: 'pro',
               plan_status: 'active',
-              plan_expiry: planExpiry.toISOString().split('T')[0],
+              plan_expiry: planExpiryDate.toISOString().split('T')[0],
               updated_at: new Date().toISOString()
             })
             .eq('user_id', user.id);
 
-          console.log('User plan updated successfully for user:', user.id);
+          // Update user_roles table
+          await supabase
+            .from('user_roles')
+            .delete()
+            .eq('user_id', user.id);
+
+          await supabase
+            .from('user_roles')
+            .insert({
+              user_id: user.id,
+              role: 'subscribed_user'
+            });
+
+          console.log('User role updated to subscribed_user for user:', user.id);
         }
       }
     }
