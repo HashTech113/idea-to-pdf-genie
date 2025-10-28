@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, RefreshCw, LogOut, TrendingUp, UserPlus } from "lucide-react";
+import { Loader2, RefreshCw, LogOut, TrendingUp, UserPlus, Crown } from "lucide-react";
 import { format, isFuture, isPast } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -124,6 +124,79 @@ const row: TablesInsert<"user_roles"> = { user_id: userId, role: newRole as AppR
       await fetchUsers();
     } catch {
       toast({ title: "Error", description: "Failed to update user role", variant: "destructive" });
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const manualUpgradeUser = async (userId: string) => {
+    try {
+      setUpdating(userId);
+
+      // Fetch user profile details
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("user_id, name")
+        .eq("user_id", userId)
+        .single();
+
+      if (profileError) throw new Error("Failed to fetch user profile");
+
+      // Get user email from the users state
+      const user = users.find(u => u.user_id === userId);
+      if (!user) throw new Error("User not found");
+
+      const planStartDate = new Date();
+      const planExpiryDate = new Date();
+      planExpiryDate.setMonth(planExpiryDate.getMonth() + 1);
+
+      // Insert subscription details
+      const { error: subscriptionError } = await supabase
+        .from("details_of_subscribed_user")
+        .insert({
+          user_id: userId,
+          email: user.email,
+          plan_name: "Pro",
+          payment_id: "manual-upgrade",
+          plan_start_date: planStartDate.toISOString().split('T')[0],
+          plan_expiry_date: planExpiryDate.toISOString().split('T')[0]
+        });
+
+      if (subscriptionError) throw new Error(`Failed to store subscription details: ${subscriptionError.message}`);
+
+      // Update profiles table
+      const { error: profileUpdateError } = await supabase
+        .from("profiles")
+        .update({
+          role: "subscribed_user",
+          plan: "pro",
+          plan_status: "active",
+          plan_expiry: planExpiryDate.toISOString().split('T')[0],
+          updated_at: new Date().toISOString()
+        })
+        .eq("user_id", userId);
+
+      if (profileUpdateError) throw new Error("Failed to update profile");
+
+      // Update user_roles table
+      await supabase.from("user_roles").delete().eq("user_id", userId);
+      const roleRow: TablesInsert<"user_roles"> = { user_id: userId, role: "subscribed_user" };
+      const { error: roleError } = await supabase.from("user_roles").insert(roleRow);
+
+      if (roleError) throw new Error("Failed to update user role");
+
+      toast({
+        title: "✅ Success",
+        description: `Subscription activated successfully for ${user.email}. Plan valid till ${format(planExpiryDate, "dd/MM/yyyy")}.`
+      });
+
+      await fetchUsers();
+    } catch (error: any) {
+      toast({
+        title: "⚠️ Error",
+        description: error.message || "Failed to store subscription details. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setUpdating(null);
     }
@@ -247,7 +320,8 @@ const roleRow: TablesInsert<"user_roles"> = { user_id: userId, role: newUser.rol
                     <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>Plan Expiry</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>Change Role</TableHead>
+                    <TableHead>Upgrade</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -280,6 +354,23 @@ const roleRow: TablesInsert<"user_roles"> = { user_id: userId, role: newUser.rol
                             <SelectItem value="admin">Admin</SelectItem>
                           </SelectContent>
                         </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          onClick={() => manualUpgradeUser(user.user_id)}
+                          disabled={updating === user.user_id || user.role === "subscribed_user"}
+                          variant="outline"
+                          size="sm"
+                        >
+                          {updating === user.user_id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <>
+                              <Crown className="h-4 w-4 mr-2" />
+                              Upgrade to Pro
+                            </>
+                          )}
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
