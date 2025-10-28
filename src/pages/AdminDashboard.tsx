@@ -22,8 +22,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, RefreshCw, LogOut, TrendingUp } from "lucide-react";
+import { Loader2, RefreshCw, LogOut, TrendingUp, UserPlus } from "lucide-react";
 import { format, isFuture, isPast } from "date-fns";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface UserProfile {
   user_id: string;
@@ -41,6 +50,15 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState<UserWithEmail[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [openAddUser, setOpenAddUser] = useState(false);
+  const [newUser, setNewUser] = useState({
+    name: "",
+    email: "",
+    password: "",
+    role: "user",
+    plan_expiry: "",
+  });
+
   const { toast } = useToast();
   const { signOut } = useAuth();
   const navigate = useNavigate();
@@ -50,43 +68,25 @@ const AdminDashboard = () => {
     try {
       setLoading(true);
 
-      // 1️⃣ Fetch profiles
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
         .select("user_id, name, plan, plan_expiry");
 
-      if (profilesError) {
-        console.error("Profiles fetch error:", profilesError);
-        throw profilesError;
-      }
+      if (profilesError) throw profilesError;
 
-      // 2️⃣ Fetch user roles
       const { data: userRoles, error: rolesError } = await supabase
         .from("user_roles")
         .select("user_id, role");
 
-      if (rolesError) {
-        console.error("Roles fetch error:", rolesError);
-        throw rolesError;
-      }
+      if (rolesError) throw rolesError;
 
-      // 3️⃣ Fetch user emails from Edge Function
       const { data: emailsData, error: emailsError } =
         await supabase.functions.invoke("get-users-emails");
 
-      if (emailsError) {
-        console.error("Emails fetch error:", emailsError);
-        throw emailsError;
-      }
+      if (emailsError) throw emailsError;
 
-      console.log("Fetched profiles:", profiles);
-      console.log("Fetched roles:", userRoles);
-      console.log("Fetched emails:", emailsData);
-
-      // Combine data
       const rolesMap = new Map<string, string>();
       userRoles?.forEach((ur) => rolesMap.set(ur.user_id, ur.role));
-
       const emailsMap = emailsData?.emails || {};
 
       const combinedUsers: UserWithEmail[] =
@@ -98,7 +98,6 @@ const AdminDashboard = () => {
 
       setUsers(combinedUsers);
     } catch (error: any) {
-      console.error("Error fetching users:", error);
       toast({
         title: "Error",
         description: `Failed to fetch users: ${error.message || error}`,
@@ -113,42 +112,78 @@ const AdminDashboard = () => {
     fetchUsers();
   }, []);
 
-  // Update user role
   const updateUserRole = async (userId: string, newRole: "admin" | "user") => {
     try {
       setUpdating(userId);
-
-      // Delete old role
       await supabase.from("user_roles").delete().eq("user_id", userId);
-
-      // Insert new role
       const { error } = await supabase
         .from("user_roles")
         .insert({ user_id: userId, role: newRole });
-
       if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: `User role updated to ${newRole}`,
-      });
-
+      toast({ title: "Success", description: `User role updated to ${newRole}` });
       await fetchUsers();
-    } catch (error) {
-      console.error("Error updating user role:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update user role",
-        variant: "destructive",
-      });
+    } catch {
+      toast({ title: "Error", description: "Failed to update user role", variant: "destructive" });
     } finally {
       setUpdating(null);
     }
   };
 
-  // Filter subscribed users
-  const filterSubscribedUsers = () => {
-    return users.filter((user) => {
+  const handleAddUser = async () => {
+    try {
+      if (!newUser.email || !newUser.password || !newUser.name) {
+        toast({ title: "Error", description: "Please fill all fields", variant: "destructive" });
+        return;
+      }
+
+      // Call Supabase Edge Function to create user with Admin API
+      const { data, error } = await supabase.functions.invoke("create-user", {
+        body: {
+          email: newUser.email,
+          password: newUser.password,
+        },
+      });
+
+      if (error || !data?.user) {
+        throw error || new Error("Failed to create user");
+      }
+
+      const userId = data.user.id;
+
+      // Insert into profiles
+      await supabase.from("profiles").insert({
+        user_id: userId,
+        name: newUser.name,
+        plan: newUser.plan_expiry ? "subscribed" : null,
+        plan_expiry: newUser.plan_expiry || null,
+      });
+
+      // Insert into user_roles
+      await supabase.from("user_roles").insert({
+        user_id: userId,
+        role: newUser.role,
+      });
+
+      toast({
+        title: "Success",
+        description: "New user added successfully!",
+      });
+
+      setOpenAddUser(false);
+      setNewUser({ name: "", email: "", password: "", role: "user", plan_expiry: "" });
+      await fetchUsers();
+    } catch (err: any) {
+      console.error("Add user error:", err);
+      toast({
+        title: "Error",
+        description: err.message || "Failed to add user",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const filterSubscribedUsers = () =>
+    users.filter((user) => {
       if (!user.plan_expiry) return false;
       const expiryDate = new Date(user.plan_expiry);
       return (
@@ -156,19 +191,13 @@ const AdminDashboard = () => {
         format(new Date(), "yyyy-MM-dd") === format(expiryDate, "yyyy-MM-dd")
       );
     });
-  };
 
-  const getRoleBadgeColor = (role?: string) => {
-    return role === "admin" ? "default" : "secondary";
-  };
+  const getRoleBadgeColor = (role?: string) => (role === "admin" ? "default" : "secondary");
 
   const getExpiryStatus = (expiry: string | null) => {
     if (!expiry) return null;
     const expiryDate = new Date(expiry);
-    if (
-      isPast(expiryDate) &&
-      format(new Date(), "yyyy-MM-dd") !== format(expiryDate, "yyyy-MM-dd")
-    ) {
+    if (isPast(expiryDate) && format(new Date(), "yyyy-MM-dd") !== format(expiryDate, "yyyy-MM-dd")) {
       return "expired";
     }
     return "active";
@@ -183,22 +212,25 @@ const AdminDashboard = () => {
     navigate("/business-plan");
   };
 
-  if (loading) {
+  if (loading)
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
-  }
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
         <div className="flex gap-2">
+          <Button onClick={() => setOpenAddUser(true)} variant="default" size="sm">
+            <UserPlus className="h-4 w-4 mr-2" />
+            Add User
+          </Button>
           <Button onClick={handleMarketResearch} variant="outline" size="sm">
             <TrendingUp className="h-4 w-4 mr-2" />
-            Market Research Agent
+            Market Research
           </Button>
           <Button onClick={fetchUsers} variant="outline" size="sm">
             <RefreshCw className="h-4 w-4 mr-2" />
@@ -217,164 +249,196 @@ const AdminDashboard = () => {
           <TabsTrigger value="subscribed">Subscribed Users</TabsTrigger>
         </TabsList>
 
-        {/* All Users Tab */}
+        {/* All Users Table */}
         <TabsContent value="all">
           <Card>
             <CardHeader>
               <CardTitle>User Management</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Plan Expiry</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {users.length > 0 ? (
-                      users.map((user) => (
-                        <TableRow key={user.user_id}>
-                          <TableCell className="font-medium">
-                            {user.name || "N/A"}
-                          </TableCell>
-                          <TableCell>{user.email}</TableCell>
-                          <TableCell>
-                            <Badge variant={getRoleBadgeColor(user.role)}>
-                              {user.role || "user"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {user.plan_expiry ? (
-                              <span
-                                className={
-                                  getExpiryStatus(user.plan_expiry) ===
-                                  "expired"
-                                    ? "text-destructive"
-                                    : ""
-                                }
-                              >
-                                {format(
-                                  new Date(user.plan_expiry),
-                                  "dd/MM/yyyy"
-                                )}
-                              </span>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Plan Expiry</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users.map((user) => (
+                    <TableRow key={user.user_id}>
+                      <TableCell>{user.name || "N/A"}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        <Badge variant={getRoleBadgeColor(user.role)}>
+                          {user.role || "user"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {user.plan_expiry ? (
+                          <span
+                            className={
+                              getExpiryStatus(user.plan_expiry) === "expired"
+                                ? "text-destructive"
+                                : ""
+                            }
+                          >
+                            {format(new Date(user.plan_expiry), "dd/MM/yyyy")}
+                          </span>
+                        ) : (
+                          "N/A"
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={user.role || "user"}
+                          onValueChange={(value: "admin" | "user") =>
+                            updateUserRole(user.user_id, value)
+                          }
+                          disabled={updating === user.user_id}
+                        >
+                          <SelectTrigger className="w-32">
+                            {updating === user.user_id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
-                              "N/A"
+                              <SelectValue />
                             )}
-                          </TableCell>
-                          <TableCell>
-                            <Select
-                              value={user.role || "user"}
-                              onValueChange={(value: "admin" | "user") =>
-                                updateUserRole(user.user_id, value)
-                              }
-                              disabled={updating === user.user_id}
-                            >
-                              <SelectTrigger className="w-32">
-                                {updating === user.user_id ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <SelectValue />
-                                )}
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="user">User</SelectItem>
-                                <SelectItem value="admin">Admin</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center">
-                          No users found
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="user">User</SelectItem>
+                            <SelectItem value="admin">Admin</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Subscribed Users Tab */}
+        {/* Subscribed Users */}
         <TabsContent value="subscribed">
           <Card>
             <CardHeader>
               <CardTitle>Subscribed Users</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Plan Expiry</TableHead>
-                      <TableHead>Status</TableHead>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Plan Expiry</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filterSubscribedUsers().map((user) => (
+                    <TableRow key={user.user_id}>
+                      <TableCell>{user.name || "N/A"}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        {user.plan_expiry && (
+                          <span
+                            className={
+                              getExpiryStatus(user.plan_expiry) === "expired"
+                                ? "text-destructive"
+                                : ""
+                            }
+                          >
+                            {format(new Date(user.plan_expiry), "dd/MM/yyyy")}
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            getExpiryStatus(user.plan_expiry) === "expired"
+                              ? "destructive"
+                              : "default"
+                          }
+                        >
+                          {getExpiryStatus(user.plan_expiry) === "expired"
+                            ? "Expired"
+                            : "Active"}
+                        </Badge>
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filterSubscribedUsers().length > 0 ? (
-                      filterSubscribedUsers().map((user) => (
-                        <TableRow key={user.user_id}>
-                          <TableCell className="font-medium">
-                            {user.name || "N/A"}
-                          </TableCell>
-                          <TableCell>{user.email}</TableCell>
-                          <TableCell>
-                            {user.plan_expiry && (
-                              <span
-                                className={
-                                  getExpiryStatus(user.plan_expiry) ===
-                                  "expired"
-                                    ? "text-destructive"
-                                    : ""
-                                }
-                              >
-                                {format(
-                                  new Date(user.plan_expiry),
-                                  "dd/MM/yyyy"
-                                )}
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={
-                                getExpiryStatus(user.plan_expiry) === "expired"
-                                  ? "destructive"
-                                  : "default"
-                              }
-                            >
-                              {getExpiryStatus(user.plan_expiry) === "expired"
-                                ? "Expired"
-                                : "Active"}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center">
-                          No subscribed users found
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+                  ))}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* ➕ Add User Modal */}
+      <Dialog open={openAddUser} onOpenChange={setOpenAddUser}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New User</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label>Name</Label>
+              <Input
+                placeholder="Enter name"
+                value={newUser.name}
+                onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Email</Label>
+              <Input
+                placeholder="Enter email"
+                value={newUser.email}
+                onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Password</Label>
+              <Input
+                type="password"
+                placeholder="Enter password"
+                value={newUser.password}
+                onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Role</Label>
+              <Select
+                value={newUser.role}
+                onValueChange={(v) => setNewUser({ ...newUser, role: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="user">User</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Plan Expiry (optional)</Label>
+              <Input
+                type="date"
+                value={newUser.plan_expiry}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, plan_expiry: e.target.value })
+                }
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleAddUser}>Add User</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
