@@ -1,6 +1,9 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { getUserRole, getLatestPdfUrl, autoDownloadPdf } from '@/utils/pdfDownload';
+import { toast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
 
 interface AuthContextType {
   user: User | null;
@@ -84,12 +87,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     
     // Update last_login timestamp on successful login
     if (!error && data.user) {
-      setTimeout(() => {
-        supabase
+      setTimeout(async () => {
+        await supabase
           .from('profiles')
           .update({ last_login: new Date().toISOString() })
-          .eq('user_id', data.user.id)
-          .then(() => {});
+          .eq('user_id', data.user.id);
+
+        // Check user role and auto-download PDF if subscribed_user or admin
+        const roleData = await getUserRole(data.user.id);
+        
+        if (roleData && (roleData.role === "subscribed_user" || roleData.role === "admin")) {
+          const pdfUrl = await getLatestPdfUrl(data.user.id);
+          
+          if (pdfUrl) {
+            autoDownloadPdf(pdfUrl);
+            
+            const expiryText = roleData.planExpiry 
+              ? ` until ${format(new Date(roleData.planExpiry), "dd/MM/yyyy")}`
+              : "";
+            
+            toast({
+              title: "🎉 Welcome back!",
+              description: `Your ${roleData.role === "admin" ? "Admin" : "Pro"} plan is active${expiryText} — your PDF is downloading now.`
+            });
+          }
+        }
       }, 0);
     }
     

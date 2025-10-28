@@ -1,11 +1,57 @@
-import { Check, Zap, Users, TrendingUp, Star, ArrowRight } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Check, Sparkles, Shield, Zap, Star, ArrowRight, Users, TrendingUp } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { getLatestPdfUrl, autoDownloadPdf } from "@/utils/pdfDownload";
+import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { useState } from "react";
 
 export const PricingSection = () => {
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const { toast } = useToast();
+
+  // Listen for payment success from Razorpay
+  // Note: This postMessage integration requires Razorpay to be configured to send messages
+  // For external Razorpay links, consider using a redirect URL callback instead
+  useEffect(() => {
+    const handlePaymentSuccess = async (event: MessageEvent) => {
+      if (event.data?.type === "RAZORPAY_PAYMENT_SUCCESS") {
+        const { razorpay_payment_id, plan_expiry_date } = event.data;
+        
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          // Fetch latest PDF and auto-download
+          const pdfUrl = await getLatestPdfUrl(user.id);
+          
+          if (pdfUrl) {
+            autoDownloadPdf(pdfUrl);
+          }
+          
+          const expiryFormatted = plan_expiry_date 
+            ? format(new Date(plan_expiry_date), "dd/MM/yyyy")
+            : "next month";
+          
+          toast({
+            title: "✅ Payment successful!",
+            description: `Your Pro plan is active until ${expiryFormatted}. ${pdfUrl ? "Your full PDF is downloading now." : ""}`,
+          });
+        }
+      } else if (event.data?.type === "RAZORPAY_PAYMENT_FAILED") {
+        toast({
+          title: "⚠️ Payment failed or canceled",
+          description: "Please try again.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    window.addEventListener("message", handlePaymentSuccess);
+    return () => window.removeEventListener("message", handlePaymentSuccess);
+  }, [toast]);
 
   const handleSubscribe = () => {
     const url = "https://rzp.io/rzp/9S0U61Dk";

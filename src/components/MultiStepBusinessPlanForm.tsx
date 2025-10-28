@@ -4,11 +4,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { LogOut, Loader2, FileText, Download, TrendingUp } from "lucide-react";
+import { LogOut, Loader2, FileText, Download, TrendingUp, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Document, Page, pdfjs } from "react-pdf";
+import { autoDownloadPdf } from "@/utils/pdfDownload";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
@@ -47,9 +48,16 @@ export const MultiStepBusinessPlanForm = () => {
           data: { user },
         } = await supabase.auth.getUser();
         if (user) {
-          const { data: profile } = await supabase.from("profiles").select("plan").eq("user_id", user.id).single();
+          const { data: profile } = await supabase.from("profiles").select("plan, role").eq("user_id", user.id).single();
           if (profile) {
             setUserPlan(profile.plan as "free" | "pro");
+            
+            // Auto-download PDF for subscribed_user and admin on first load
+            if (pdfUrl && (profile.role === "subscribed_user" || profile.role === "admin") && !showPreview) {
+              setTimeout(() => {
+                autoDownloadPdf(pdfUrl);
+              }, 1000);
+            }
           }
         }
       } catch (error) {
@@ -57,7 +65,7 @@ export const MultiStepBusinessPlanForm = () => {
       }
     };
     fetchUserPlan();
-  }, []);
+  }, [pdfUrl, showPreview]);
 
   const updateData = (data: any) => {
     setFormData((prev) => ({ ...prev, ...data }));
@@ -311,8 +319,20 @@ export const MultiStepBusinessPlanForm = () => {
     }
   };
 
-  const handleDownload = () => {
-    if (userPlan === "free") {
+  const handleDownload = async () => {
+    // Check user role from profiles
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("user_id", user.id)
+      .single();
+
+    const userRole = profile?.role || "user";
+
+    if (userRole === "user" && userPlan === "free") {
       toast({
         title: "Upgrade Required",
         description: "Download the full PDF by upgrading to Pro",
@@ -320,6 +340,7 @@ export const MultiStepBusinessPlanForm = () => {
       });
       setTimeout(() => navigate("/pricing"), 1500);
     } else {
+      // Auto-download for subscribed_user and admin
       window.open(pdfUrl, "_blank");
     }
   };
@@ -329,6 +350,7 @@ export const MultiStepBusinessPlanForm = () => {
   };
 
   if (showPreview && pdfUrl) {
+    // Show 2 pages for free users, full PDF for subscribed/admin
     const pagesToShow = userPlan === "free" ? 2 : numPages;
 
     return (
@@ -374,14 +396,23 @@ export const MultiStepBusinessPlanForm = () => {
                 </div>
               )}
 
-              <Button
-                onClick={handleDownload}
-                className="mt-6 w-full max-w-md h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 gap-2"
-                disabled={userPlan === "free"}
-              >
-                <Download className="h-5 w-5" />
-                {userPlan === "free" ? "Upgrade to Download Full PDF" : "Download Full PDF"}
-              </Button>
+              {userPlan === "free" ? (
+                <Button
+                  onClick={() => navigate("/pricing")}
+                  className="mt-6 w-full max-w-md h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 gap-2"
+                >
+                  <Sparkles className="h-5 w-5" />
+                  Upgrade to Pro - Download Full PDF
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleDownload}
+                  className="mt-6 w-full max-w-md h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 gap-2"
+                >
+                  <Download className="h-5 w-5" />
+                  Download Full PDF
+                </Button>
+              )}
             </div>
           </div>
         </div>
