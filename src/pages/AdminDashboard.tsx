@@ -161,8 +161,8 @@ const AdminDashboard = () => {
       // Insert into user_roles
       await supabase.from("user_roles").insert({
         user_id: userId,
-        role: newUser.role,
-      });
+        role: newUser.role as "admin" | "moderator" | "user",
+      } as any);
 
       toast({
         title: "Success",
