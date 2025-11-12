@@ -426,14 +426,13 @@ export const MultiStepBusinessPlanForm = () => {
         <Button
           onClick={handleLogout}
           variant="outline"
-          size="sm"
-          className="absolute top-6 right-6 gap-2 border-2 border-black text-black hover:bg-black hover:text-white font-medium px-4 transition-colors"
+          size="icon"
+          className="absolute top-4 right-4 border-2 border-black text-black hover:bg-black hover:text-white transition-colors"
         >
-          <LogOut className="h-4 w-4" />
-          Logout
+          <LogOut className="h-5 w-5" />
         </Button>
         
-        <div className="space-y-8">
+        <div className="space-y-8 pt-8">
           <div className="text-center space-y-4 mb-4">
             <h2 className="text-3xl font-bold font-poppins text-foreground">
               Basic Business Information
