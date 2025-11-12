@@ -422,7 +422,17 @@ export const MultiStepBusinessPlanForm = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-8">
+      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-8 relative">
+        <Button
+          onClick={handleLogout}
+          variant="outline"
+          size="sm"
+          className="absolute top-6 right-6 gap-2 border-2 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 font-medium px-4"
+        >
+          <LogOut className="h-4 w-4" />
+          Logout
+        </Button>
+        
         <div className="space-y-8">
           <div className="text-center space-y-4 mb-4">
             <h2 className="text-3xl font-bold font-poppins text-foreground">
@@ -548,31 +558,20 @@ export const MultiStepBusinessPlanForm = () => {
             </div>
           )}
 
-          <div className="flex flex-col gap-3">
-            <Button
-              onClick={handleSubmit}
-              disabled={isLoading}
-              className="w-full h-12 bg-black hover:bg-gray-800 text-white font-semibold disabled:opacity-50"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                  Generating Business Plan...
-                </>
-              ) : (
-                "Generate Business Plan"
-              )}
-            </Button>
-
-            <Button
-              onClick={handleLogout}
-              variant="outline"
-              className="w-full h-12 gap-2 border-gray-300 hover:bg-gray-50"
-            >
-              <LogOut className="h-4 w-4" />
-              Logout
-            </Button>
-          </div>
+          <Button
+            onClick={handleSubmit}
+            disabled={isLoading}
+            className="w-full h-12 bg-black hover:bg-gray-800 text-white font-semibold disabled:opacity-50"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                Generating Business Plan...
+              </>
+            ) : (
+              "Generate Business Plan"
+            )}
+          </Button>
         </div>
       </div>
     </div>
