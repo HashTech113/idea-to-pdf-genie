@@ -427,7 +427,7 @@ export const MultiStepBusinessPlanForm = () => {
           onClick={handleLogout}
           variant="outline"
           size="sm"
-          className="absolute top-6 right-6 gap-2 border-2 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 font-medium px-4"
+          className="absolute top-6 right-6 gap-2 border-2 border-black text-black hover:bg-black hover:text-white font-medium px-4 transition-colors"
         >
           <LogOut className="h-4 w-4" />
           Logout
