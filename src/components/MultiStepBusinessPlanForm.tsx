@@ -19,10 +19,10 @@ export const MultiStepBusinessPlanForm = () => {
   const [formData, setFormData] = useState({
     businessName: "",
     businessDescription: "",
-    numberOfEmployees: "",
     customerLocation: "",
-    offeringType: "",
-    deliveryMethod: "",
+    coreStrengths: "",
+    differentiation: "",
+    competitors: "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -78,19 +78,19 @@ export const MultiStepBusinessPlanForm = () => {
       newErrors.businessName = "Business name is required";
     }
     if (!formData.businessDescription.trim()) {
-      newErrors.businessDescription = "Business description is required";
-    }
-    if (!formData.numberOfEmployees) {
-      newErrors.numberOfEmployees = "Number of employees is required";
+      newErrors.businessDescription = "This field is required";
     }
     if (!formData.customerLocation.trim()) {
-      newErrors.customerLocation = "Customer location is required";
+      newErrors.customerLocation = "This field is required";
     }
-    if (!formData.offeringType) {
-      newErrors.offeringType = "Please select offering type";
+    if (!formData.coreStrengths.trim()) {
+      newErrors.coreStrengths = "This field is required";
     }
-    if (!formData.deliveryMethod) {
-      newErrors.deliveryMethod = "Please select delivery method";
+    if (!formData.differentiation.trim()) {
+      newErrors.differentiation = "This field is required";
+    }
+    if (!formData.competitors.trim()) {
+      newErrors.competitors = "This field is required";
     }
 
     setErrors(newErrors);
@@ -267,8 +267,10 @@ export const MultiStepBusinessPlanForm = () => {
       userId: user.id,
       businessName: formData.businessName,
       businessDescription: formData.businessDescription,
-      numberOfEmployees: formData.numberOfEmployees,
       customerLocation: formData.customerLocation,
+      coreStrengths: formData.coreStrengths,
+      differentiation: formData.differentiation,
+      competitors: formData.competitors,
     };
 
     console.log("Sending data to webhook:", dataToSend);
@@ -442,101 +444,69 @@ export const MultiStepBusinessPlanForm = () => {
 
           <div className="space-y-6">
             <div className="space-y-2">
-              <Label className="text-sm font-semibold text-gray-700">Business Name *</Label>
+              <Label className="text-sm font-poppins font-semibold text-[#000000]">Business Name *</Label>
               <Input
                 value={formData.businessName}
                 onChange={(e) => updateData({ businessName: e.target.value })}
                 placeholder="Enter your business name"
-                className="h-12 border-black focus:border-black focus:ring-2 focus:ring-gray-300"
+                className="h-12 border-black focus:border-black focus:ring-2 focus:ring-gray-300 font-poppins text-[#000000] placeholder:text-[#000000] placeholder:opacity-50"
               />
               {errors.businessName && <p className="text-red-500 text-xs">{errors.businessName}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-semibold text-gray-700">Business Description *</Label>
+              <Label className="text-sm font-poppins font-semibold text-[#000000]">What is your idea about? (Detail it) *</Label>
               <Textarea
                 value={formData.businessDescription}
                 onChange={(e) => updateData({ businessDescription: e.target.value })}
-                placeholder="Describe what your business does..."
-                className="min-h-[100px] border-black focus:border-black focus:ring-2 focus:ring-gray-300"
+                placeholder="Detail your business idea..."
+                className="min-h-[100px] border-black focus:border-black focus:ring-2 focus:ring-gray-300 font-poppins text-[#000000] placeholder:text-[#000000] placeholder:opacity-50"
               />
               {errors.businessDescription && <p className="text-red-500 text-xs">{errors.businessDescription}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-semibold text-gray-700">Number of Employees *</Label>
-              <Input
-                type="number"
-                min="0"
-                value={formData.numberOfEmployees}
-                onChange={(e) => updateData({ numberOfEmployees: e.target.value })}
-                placeholder="0"
-                className="h-12 border-black focus:border-black focus:ring-2 focus:ring-gray-300"
-              />
-              {errors.numberOfEmployees && <p className="text-red-500 text-xs">{errors.numberOfEmployees}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold text-gray-700">Where do you serve customers? *</Label>
+              <Label className="text-sm font-poppins font-semibold text-[#000000]">Where do you plan to start your business initially? *</Label>
               <Input
                 value={formData.customerLocation}
                 onChange={(e) => updateData({ customerLocation: e.target.value })}
                 placeholder="e.g., Local, Regional, National, Global"
-                className="h-12 border-black focus:border-black focus:ring-2 focus:ring-gray-300"
+                className="h-12 border-black focus:border-black focus:ring-2 focus:ring-gray-300 font-poppins text-[#000000] placeholder:text-[#000000] placeholder:opacity-50"
               />
               {errors.customerLocation && <p className="text-red-500 text-xs">{errors.customerLocation}</p>}
             </div>
 
-            <div className="space-y-3">
-              <Label className="text-sm font-semibold text-gray-700">Do you offer products or services? *</Label>
-              <RadioGroup
-                value={formData.offeringType}
-                onValueChange={(value) => updateData({ offeringType: value })}
-                className="grid grid-cols-2 gap-3"
-              >
-                <div className="flex items-center space-x-2 bg-gray-50 p-4 rounded-lg border-2 border-gray-200 hover:border-black transition-colors">
-                  <RadioGroupItem value="products" id="products" />
-                  <Label htmlFor="products" className="cursor-pointer font-medium">
-                    Products
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2 bg-gray-50 p-4 rounded-lg border-2 border-gray-200 hover:border-black transition-colors">
-                  <RadioGroupItem value="services" id="services" />
-                  <Label htmlFor="services" className="cursor-pointer font-medium">
-                    Services
-                  </Label>
-                </div>
-              </RadioGroup>
-              {errors.offeringType && <p className="text-red-500 text-xs">{errors.offeringType}</p>}
+            <div className="space-y-2">
+              <Label className="text-sm font-poppins font-semibold text-[#000000]">What do you consider your core strengths? *</Label>
+              <Input
+                value={formData.coreStrengths}
+                onChange={(e) => updateData({ coreStrengths: e.target.value })}
+                placeholder="Describe your core strengths..."
+                className="h-12 border-black focus:border-black focus:ring-2 focus:ring-gray-300 font-poppins text-[#000000] placeholder:text-[#000000] placeholder:opacity-50"
+              />
+              {errors.coreStrengths && <p className="text-red-500 text-xs">{errors.coreStrengths}</p>}
             </div>
 
-            <div className="space-y-3">
-              <Label className="text-sm font-semibold text-gray-700">
-                How do customers get your {formData.offeringType || "products/services"}? *
-              </Label>
-              <RadioGroup
-                value={formData.deliveryMethod}
-                onValueChange={(value) => updateData({ deliveryMethod: value })}
-                className="grid grid-cols-1 gap-3"
-              >
-                {[
-                  { value: "physical-store", label: "Physical Store/Location" },
-                  { value: "online", label: "Online/Digital Delivery" },
-                  { value: "hybrid", label: "Both Physical and Online" },
-                  { value: "direct-sales", label: "Direct Sales/Field Service" },
-                ].map((option) => (
-                  <div
-                    key={option.value}
-                    className="flex items-center space-x-2 bg-gray-50 p-4 rounded-lg border-2 border-gray-200 hover:border-black transition-colors"
-                  >
-                    <RadioGroupItem value={option.value} id={option.value} />
-                    <Label htmlFor={option.value} className="flex-1 cursor-pointer font-medium">
-                      {option.label}
-                    </Label>
-                  </div>
-                ))}
-              </RadioGroup>
-              {errors.deliveryMethod && <p className="text-red-500 text-xs">{errors.deliveryMethod}</p>}
+            <div className="space-y-2">
+              <Label className="text-sm font-poppins font-semibold text-[#000000]">How do you intend to differentiate yourself and redefine market boundaries? *</Label>
+              <Textarea
+                value={formData.differentiation}
+                onChange={(e) => updateData({ differentiation: e.target.value })}
+                placeholder="Explain your differentiation strategy..."
+                className="min-h-[100px] border-black focus:border-black focus:ring-2 focus:ring-gray-300 font-poppins text-[#000000] placeholder:text-[#000000] placeholder:opacity-50"
+              />
+              {errors.differentiation && <p className="text-red-500 text-xs">{errors.differentiation}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-poppins font-semibold text-[#000000]">Known Direct and Indirect Competitors *</Label>
+              <Input
+                value={formData.competitors}
+                onChange={(e) => updateData({ competitors: e.target.value })}
+                placeholder="List your competitors..."
+                className="h-12 border-black focus:border-black focus:ring-2 focus:ring-gray-300 font-poppins text-[#000000] placeholder:text-[#000000] placeholder:opacity-50"
+              />
+              {errors.competitors && <p className="text-red-500 text-xs">{errors.competitors}</p>}
             </div>
           </div>
 
