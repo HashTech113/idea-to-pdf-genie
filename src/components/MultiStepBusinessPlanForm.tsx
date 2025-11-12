@@ -424,22 +424,11 @@ export const MultiStepBusinessPlanForm = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
       <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-8">
         <div className="space-y-8">
-          <div className="flex justify-between items-start mb-4">
-            <div className="flex-1 text-center space-y-4">
-              <h2 className="text-3xl font-bold font-poppins text-foreground">
-                Basic Business Information
-              </h2>
-              <p className="text-gray-600 text-sm">Tell us about your business fundamentals</p>
-            </div>
-            <Button
-              onClick={() => navigate('/business-plan')}
-              variant="outline"
-              size="sm"
-              className="shrink-0"
-            >
-              <TrendingUp className="h-4 w-4 mr-2" />
-              Market Research Agent
-            </Button>
+          <div className="text-center space-y-4 mb-4">
+            <h2 className="text-3xl font-bold font-poppins text-foreground">
+              Basic Business Information
+            </h2>
+            <p className="text-gray-600 text-sm">Tell us about your business fundamentals</p>
           </div>
 
           <div className="space-y-6">
@@ -563,7 +552,7 @@ export const MultiStepBusinessPlanForm = () => {
             <Button
               onClick={handleSubmit}
               disabled={isLoading}
-              className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold disabled:opacity-50"
+              className="w-full h-12 bg-black hover:bg-gray-800 text-white font-semibold disabled:opacity-50"
             >
               {isLoading ? (
                 <>
