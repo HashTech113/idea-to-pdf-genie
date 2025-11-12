@@ -447,7 +447,7 @@ export const MultiStepBusinessPlanForm = () => {
                 value={formData.businessName}
                 onChange={(e) => updateData({ businessName: e.target.value })}
                 placeholder="Enter your business name"
-                className="h-12 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                className="h-12 border-black focus:border-black focus:ring-2 focus:ring-gray-300"
               />
               {errors.businessName && <p className="text-red-500 text-xs">{errors.businessName}</p>}
             </div>
@@ -458,7 +458,7 @@ export const MultiStepBusinessPlanForm = () => {
                 value={formData.businessDescription}
                 onChange={(e) => updateData({ businessDescription: e.target.value })}
                 placeholder="Describe what your business does..."
-                className="min-h-[100px] border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                className="min-h-[100px] border-black focus:border-black focus:ring-2 focus:ring-gray-300"
               />
               {errors.businessDescription && <p className="text-red-500 text-xs">{errors.businessDescription}</p>}
             </div>
@@ -471,7 +471,7 @@ export const MultiStepBusinessPlanForm = () => {
                 value={formData.numberOfEmployees}
                 onChange={(e) => updateData({ numberOfEmployees: e.target.value })}
                 placeholder="0"
-                className="h-12 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                className="h-12 border-black focus:border-black focus:ring-2 focus:ring-gray-300"
               />
               {errors.numberOfEmployees && <p className="text-red-500 text-xs">{errors.numberOfEmployees}</p>}
             </div>
@@ -482,7 +482,7 @@ export const MultiStepBusinessPlanForm = () => {
                 value={formData.customerLocation}
                 onChange={(e) => updateData({ customerLocation: e.target.value })}
                 placeholder="e.g., Local, Regional, National, Global"
-                className="h-12 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                className="h-12 border-black focus:border-black focus:ring-2 focus:ring-gray-300"
               />
               {errors.customerLocation && <p className="text-red-500 text-xs">{errors.customerLocation}</p>}
             </div>
@@ -494,13 +494,13 @@ export const MultiStepBusinessPlanForm = () => {
                 onValueChange={(value) => updateData({ offeringType: value })}
                 className="grid grid-cols-2 gap-3"
               >
-                <div className="flex items-center space-x-2 bg-gray-50 p-4 rounded-lg border-2 border-gray-200 hover:border-blue-400 transition-colors">
+                <div className="flex items-center space-x-2 bg-gray-50 p-4 rounded-lg border-2 border-gray-200 hover:border-black transition-colors">
                   <RadioGroupItem value="products" id="products" />
                   <Label htmlFor="products" className="cursor-pointer font-medium">
                     Products
                   </Label>
                 </div>
-                <div className="flex items-center space-x-2 bg-gray-50 p-4 rounded-lg border-2 border-gray-200 hover:border-blue-400 transition-colors">
+                <div className="flex items-center space-x-2 bg-gray-50 p-4 rounded-lg border-2 border-gray-200 hover:border-black transition-colors">
                   <RadioGroupItem value="services" id="services" />
                   <Label htmlFor="services" className="cursor-pointer font-medium">
                     Services
@@ -527,7 +527,7 @@ export const MultiStepBusinessPlanForm = () => {
                 ].map((option) => (
                   <div
                     key={option.value}
-                    className="flex items-center space-x-2 bg-gray-50 p-4 rounded-lg border-2 border-gray-200 hover:border-blue-400 transition-colors"
+                    className="flex items-center space-x-2 bg-gray-50 p-4 rounded-lg border-2 border-gray-200 hover:border-black transition-colors"
                   >
                     <RadioGroupItem value={option.value} id={option.value} />
                     <Label htmlFor={option.value} className="flex-1 cursor-pointer font-medium">
