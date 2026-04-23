@@ -1,0 +1,400 @@
+/*!***********************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[3]!./src/components/estimator/mrr-tool.css ***!
+  \***********************************************************************************************************************************************************************************************************************************************************************************/
+/* ─────────────────────────────────────────────────────────────────────────────
+   MRR TOOL — SCOPED STYLES
+   All styles prefixed with .mrr-tool to prevent conflicts when embedded
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ─── CSS CUSTOM PROPERTIES (scoped) ──────────────────────────────────────── */
+
+.mrr-tool {
+  /* Colors */
+  --mrr-color-bg-base: #FAFAF9;
+  --mrr-color-bg-surface: #FFFFFF;
+  --mrr-color-bg-surface-sunken: #F0EFF0;
+  --mrr-color-bg-inverse: #0F0F0E;
+
+  --mrr-color-text-primary: #0F0F0E;
+  --mrr-color-text-secondary: #3D3C3D;
+  --mrr-color-text-tertiary: #A8A7A8;
+  --mrr-color-text-inverse: #FFFFFF;
+  --mrr-color-text-link: #2563EB;
+
+  --mrr-color-border-subtle: #EBEBEA;
+  --mrr-color-border-default: #DDDCDD;
+  --mrr-color-border-strong: #C8C7C8;
+  --mrr-color-border-focus: #2563EB;
+
+  --mrr-color-gold: #B8965A;
+  --mrr-color-gold-light: #FEF9EE;
+  --mrr-color-success: #16A34A;
+  --mrr-color-warning: #D97706;
+  --mrr-color-danger: #DC2626;
+
+  /* Shadows */
+  --mrr-shadow-xs: 0 1px 2px rgba(0,0,0,0.04);
+  --mrr-shadow-sm: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
+  --mrr-shadow-md: 0 4px 16px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04);
+  --mrr-shadow-lg: 0 12px 40px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.05);
+  --mrr-shadow-xl: 0 24px 64px rgba(0,0,0,0.10), 0 8px 24px rgba(0,0,0,0.06);
+  --mrr-shadow-2xl: 0 40px 96px rgba(0,0,0,0.12), 0 12px 32px rgba(0,0,0,0.07);
+  --mrr-shadow-focus: 0 0 0 3px rgba(37,99,235,0.12);
+
+  /* Radius */
+  --mrr-radius-sm: 6px;
+  --mrr-radius-md: 8px;
+  --mrr-radius-lg: 12px;
+  --mrr-radius-xl: 16px;
+  --mrr-radius-2xl: 24px;
+
+  /* Nav */
+  --mrr-nav-height: 64px;
+
+  /* Easing */
+  --mrr-ease-premium: cubic-bezier(0.16, 1.0, 0.3, 1.0);
+  --mrr-ease-out: cubic-bezier(0.0, 0.0, 0.2, 1.0);
+  --mrr-ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Dark mode scoped */
+.mrr-tool.mrr-dark,
+.mrr-tool[data-theme="dark"] {
+  --mrr-color-bg-base: #0C0C0B;
+  --mrr-color-bg-surface: #161615;
+  --mrr-color-bg-surface-sunken: #111110;
+  --mrr-color-bg-inverse: #FAFAF9;
+
+  --mrr-color-text-primary: #F5F5F4;
+  --mrr-color-text-secondary: #A8A7A8;
+  --mrr-color-text-tertiary: #5C5B5C;
+  --mrr-color-text-inverse: #0F0F0E;
+  --mrr-color-text-link: #60A5FA;
+
+  --mrr-color-border-subtle: #222221;
+  --mrr-color-border-default: #2E2E2D;
+  --mrr-color-border-strong: #3D3C3D;
+  --mrr-color-border-focus: #3B82F6;
+
+  --mrr-shadow-xs: 0 1px 2px rgba(0,0,0,0.2);
+  --mrr-shadow-sm: 0 1px 3px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.15);
+  --mrr-shadow-md: 0 4px 16px rgba(0,0,0,0.25), 0 1px 4px rgba(0,0,0,0.2);
+  --mrr-shadow-lg: 0 12px 40px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.25);
+  --mrr-shadow-xl: 0 24px 64px rgba(0,0,0,0.35), 0 8px 24px rgba(0,0,0,0.3);
+  --mrr-shadow-focus: 0 0 0 3px rgba(59, 130, 246, 0.2);
+
+  color-scheme: dark;
+}
+
+/* ─── COMPONENT CLASSES (scoped) ────────────────────────────────────────────── */
+
+/* Container */
+.mrr-tool .mrr-container-content {
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .mrr-tool .mrr-container-content {
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+  }
+}
+
+/* Section padding */
+.mrr-tool .mrr-section-padding {
+  padding-top: 4rem;
+  padding-bottom: 4rem;
+}
+
+@media (min-width: 768px) {
+  .mrr-tool .mrr-section-padding {
+    padding-top: 6rem;
+    padding-bottom: 6rem;
+  }
+}
+
+/* Premium card */
+.mrr-tool .mrr-card-premium {
+  background-color: var(--mrr-color-bg-surface);
+  border: 1px solid var(--mrr-color-border-subtle);
+  border-radius: var(--mrr-radius-xl);
+  box-shadow: var(--mrr-shadow-md);
+  transition: box-shadow 200ms var(--mrr-ease-out), transform 200ms var(--mrr-ease-out);
+}
+
+.mrr-tool .mrr-card-premium:hover {
+  box-shadow: var(--mrr-shadow-lg);
+  transform: translateY(-3px);
+}
+
+/* Glass panel */
+.mrr-tool .mrr-glass-panel {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.60);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8);
+}
+
+.mrr-tool.mrr-dark .mrr-glass-panel,
+.mrr-tool[data-theme="dark"] .mrr-glass-panel {
+  background: rgba(22, 22, 21, 0.72);
+  border-color: rgba(45, 45, 44, 0.6);
+}
+
+/* Frosted nav */
+.mrr-tool .mrr-frosted-nav {
+  background: rgba(250, 250, 249, 0.92);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid var(--mrr-color-border-subtle);
+}
+
+.mrr-tool.mrr-dark .mrr-frosted-nav,
+.mrr-tool[data-theme="dark"] .mrr-frosted-nav {
+  background: rgba(12, 12, 11, 0.92);
+}
+
+/* Eyebrow / label */
+.mrr-tool .mrr-eyebrow {
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #6B6B6B;
+}
+
+/* Metric value */
+.mrr-tool .mrr-metric-value {
+  font-family: 'Geist Mono', 'SF Mono', 'Fira Code', monospace;
+  font-weight: 600;
+  color: var(--mrr-color-text-primary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.025em;
+}
+
+/* KPI card layout */
+.mrr-tool .mrr-kpi-card {
+  background-color: var(--mrr-color-bg-surface);
+  border: 1px solid var(--mrr-color-border-subtle);
+  border-radius: var(--mrr-radius-xl);
+  padding: 1.25rem;
+  box-shadow: var(--mrr-shadow-sm);
+}
+
+/* Input base */
+.mrr-tool .mrr-input-base {
+  background-color: var(--mrr-color-bg-surface);
+  border: 1px solid var(--mrr-color-border-strong);
+  border-radius: var(--mrr-radius-lg);
+  padding: 0.625rem 0.75rem;
+  color: var(--mrr-color-text-primary);
+  font-size: 14px;
+  height: 44px;
+  box-shadow: var(--mrr-shadow-xs);
+  transition: all 150ms ease;
+  outline: none;
+  width: 100%;
+}
+
+.mrr-tool .mrr-input-base::-moz-placeholder {
+  color: #A8A7A8;
+}
+
+.mrr-tool .mrr-input-base::placeholder {
+  color: #A8A7A8;
+}
+
+.mrr-tool .mrr-input-base:focus {
+  border-color: var(--mrr-color-border-focus);
+  box-shadow: var(--mrr-shadow-focus);
+}
+
+/* Button primary */
+.mrr-tool .mrr-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  background-color: #0F0F0E;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: var(--mrr-radius-lg);
+  transition: all 150ms ease;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
+  cursor: pointer;
+  border: none;
+  letter-spacing: -0.01em;
+  box-shadow: var(--mrr-shadow-sm);
+  height: 40px;
+}
+
+.mrr-tool .mrr-btn-primary:hover {
+  background-color: #262626;
+  box-shadow: var(--mrr-shadow-md);
+  transform: translateY(-1px);
+}
+
+.mrr-tool .mrr-btn-primary:active {
+  transform: translateY(0);
+  box-shadow: var(--mrr-shadow-xs);
+}
+
+.mrr-tool .mrr-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mrr-tool .mrr-btn-primary:disabled:hover {
+  transform: none;
+  box-shadow: var(--mrr-shadow-sm);
+}
+
+/* Button secondary */
+.mrr-tool .mrr-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  background-color: transparent;
+  color: #4B4B4B;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: var(--mrr-radius-lg);
+  border: 1px solid var(--mrr-color-border-default);
+  transition: all 150ms ease;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
+  cursor: pointer;
+  height: 40px;
+}
+
+.mrr-tool .mrr-btn-secondary:hover {
+  background-color: #FAFAF9;
+  border-color: var(--mrr-color-border-strong);
+  color: var(--mrr-color-text-primary);
+}
+
+/* Button ghost */
+.mrr-tool .mrr-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  background-color: transparent;
+  color: #757575;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: var(--mrr-radius-lg);
+  transition: all 150ms ease;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
+  cursor: pointer;
+  height: 36px;
+  border: none;
+}
+
+.mrr-tool .mrr-btn-ghost:hover {
+  background-color: #F5F5F5;
+  color: var(--mrr-color-text-primary);
+}
+
+/* Gold accent line */
+.mrr-tool .mrr-gold-accent-line {
+  display: block;
+  width: 40px;
+  height: 2px;
+  background: var(--mrr-color-gold);
+  margin-bottom: 24px;
+}
+
+/* Gradient text */
+.mrr-tool .mrr-text-gradient-dark {
+  background: linear-gradient(135deg, #0F0F0E 0%, #3D3C3D 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Skeleton loading */
+.mrr-tool .mrr-skeleton {
+  background-color: #E5E5E5;
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+}
+
+.mrr-tool .mrr-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+  transform: translateX(-100%);
+  animation: mrr-shimmer 1.5s infinite;
+}
+
+@keyframes mrr-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Grid patterns */
+.mrr-tool .mrr-bg-grid {
+  background-image:
+    linear-gradient(var(--mrr-color-border-subtle) 1px, transparent 1px),
+    linear-gradient(90deg, var(--mrr-color-border-subtle) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+/* Focus ring */
+.mrr-tool .mrr-focus-ring:focus-visible {
+  outline: 2px solid var(--mrr-color-border-focus);
+  outline-offset: 2px;
+}
+
+/* Scrollbar hide */
+.mrr-tool .mrr-scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.mrr-tool .mrr-scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Tabular numbers */
+.mrr-tool .mrr-tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Text balance */
+.mrr-tool .mrr-text-balance {
+  text-wrap: balance;
+}
+
+/* Border utilities */
+.mrr-tool .mrr-border-subtle {
+  border-color: var(--mrr-color-border-subtle);
+}
+
+.mrr-tool .mrr-border-default {
+  border-color: var(--mrr-color-border-default);
+}
+
+.mrr-tool .mrr-border-strong {
+  border-color: var(--mrr-color-border-strong);
+}
+
